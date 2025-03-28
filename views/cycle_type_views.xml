@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form View -->
+    <record id="view_cycle_type_form" model="ir.ui.view">
+        <field name="name">afr.cycle.type.form</field>
+        <field name="model">afr.cycle.type</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="execute_python_code" type="object" class="oe_stat_button" string="Executar Código Python">
+                        
+                    </button>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object" class="oe_stat_button" icon="fa-archive">
+                            <field name="active" widget="boolean_button" options="{'terminology': 'archive'}"/>
+                        </button>
+                        <button name="action_view_cycles" type="object" class="oe_stat_button" icon="fa-list">
+                            <field name="cycle_count" widget="statinfo" string="Ciclos"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nome do Tipo de Ciclo"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                        <group>
+                            <field name="form_view_id" help="Selecione o formulário específico a ser usado para este tipo de ciclo. O formulário deve ser do modelo 'afr.supervisorio.ciclos' e do tipo 'form'."/>
+                            <field name="reader_class_dataobject" help="Informe o nome da classe que implementa a interface de leitura de fita digital para este tipo de ciclo. Por exemplo: 'ReaderFitaDigitalAfr' ou 'ReaderFitaDigitalVapor'."/>
+                            <field name="method_name_create_cycle" help="Informe o nome do método que será chamado dinamicamente para criar os dados específicos do ciclo. Por exemplo: 'create_cycle_data_vapor'."/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <p><strong>Configuração do Tipo de Ciclo:</strong></p>
+                        <ul>
+                            <li><strong>Form View ID:</strong> Selecione a visualização de formulário específica para este tipo de ciclo. Deve ser uma visualização do modelo 'afr.supervisorio.ciclos'.</li>
+                            <li><strong>Reader Class DataObject:</strong> Nome da classe que implementa a leitura da fita digital (ex: 'ReaderFitaDigitalAfr'). Esta classe deve estar definida no módulo fita_digital.</li>
+                            <li><strong>Method Name Create Cycle:</strong> Nome do método que será chamado para processar os dados da fita e criar o ciclo (ex: 'create_cycle_data_vapor'). Este método deve estar implementado em um modelo que herda de 'afr.supervisorio.ciclos'.</li>
+                        </ul>
+                    </div>
+                    <notebook>
+                        <page string="Codigo Python">
+                            <field name="python_code" placeholder="Escreva o código Python para processamento deste tipo de ciclo..."/>
+                        </page>
+                        <page string="Ciclos">
+                            <field name="cycle_type_ids" readonly="1">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="equipment_id"/>
+                                    <field name="start_date"/>
+                                    <field name="duration"/>
+                                    <field name="state" decoration-info="state=='aguardando'"
+                                           decoration-success="state=='concluido'"
+                                           decoration-warning="state=='em_andamento'"
+                                           decoration-danger="state in ['erro','cancelado','abortado']"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree View -->
+    <record id="view_cycle_type_tree" model="ir.ui.view">
+        <field name="name">afr.cycle.type.tree</field>
+        <field name="model">afr.cycle.type</field>
+        <field name="arch" type="xml">
+            <tree decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="form_view_id"/>
+                <field name="cycle_count"/>
+                <field name="reader_class_dataobject"/>
+                <field name="active" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_cycle_type_search" model="ir.ui.view">
+        <field name="name">afr.cycle.type.search</field>
+        <field name="model">afr.cycle.type</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="form_view_id"/>
+                <field name="reader_class_dataobject"/>
+                <separator/>
+                <filter string="Ativos" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Arquivados" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Agrupar Por">
+                    <filter string="Formulário" name="form_view" context="{'group_by': 'form_view_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_cycle_type" model="ir.actions.act_window">
+        <field name="name">Tipos de Ciclo</field>
+        <field name="res_model">afr.cycle.type</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_cycle_type_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crie seu primeiro tipo de ciclo!
+            </p>
+            <p>
+                Configure os tipos de ciclo disponíveis.
+            </p>
+        </field>
+    </record>
+</odoo> 

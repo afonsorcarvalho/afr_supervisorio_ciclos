@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menu principal -->
+    <menuitem 
+        id="menu_afr_supervisorio_ciclos"
+        name="Supervisório de Ciclos"
+        sequence="10"/>
+
+    <!-- Submenu Operações -->
+    <menuitem 
+        id="menu_afr_supervisorio_ciclos_operations"
+        name="Operações"
+        parent="menu_afr_supervisorio_ciclos"
+        sequence="10"/>
+
+    <menuitem 
+        id="menu_afr_supervisorio_ciclos_ciclos"
+        name="Ciclos"
+        parent="menu_afr_supervisorio_ciclos_operations"
+        action="action_afr_supervisorio_ciclos_ciclos"
+        sequence="1"/>
+
+    <!-- Submenu Configurações -->
+    <menuitem 
+        id="menu_afr_supervisorio_ciclos_config"
+        name="Configurações"
+        parent="menu_afr_supervisorio_ciclos"
+        sequence="100"/>
+
+    <menuitem 
+        id="menu_afr_cycle_type"
+        name="Tipos de Ciclo"
+        parent="menu_afr_supervisorio_ciclos_config"
+        action="action_cycle_type"
+        sequence="1"/>
+
+    <!-- Action -->
+    <!-- <record id="action_afr_supervisorio_ciclos_ciclos" model="ir.actions.act_window">
+        <field name="name">Ciclos</field>
+        <field name="res_model">afr.supervisorio.ciclos</field>
+        <field name="view_mode">tree,form,calendar,pivot</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_empty_folder">
+                Não há ciclos cadastrados.
+            </p>
+            <p>
+                Os ciclos serão registrados automaticamente pelo sistema.
+            </p>
+        </field>
+    </record> -->
+</odoo> 
