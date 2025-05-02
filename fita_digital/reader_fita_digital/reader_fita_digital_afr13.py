@@ -1,6 +1,11 @@
 from .reader_fita_digital import ReaderFitaDigitalInterface
 import re
 from datetime import datetime
+import logging
+_logger = logging.getLogger(__name__)
+
+
+
 class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
     """
     Classe para leitura de fitas digitais do equipamento AFR.
@@ -118,7 +123,9 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
             dict: Dicionário contendo as informações do cabeçalho
         """
         header = super().read_header()
-        header['Data:'] = datetime.strptime(header['Data:'], '%d-%m-%Y')
+        _logger.debug(f"header: {header}")
+        header[self.header_fields.date_key] = datetime.strptime(header[self.header_fields.date_key], '%d-%m-%Y')
+        
         return header
 
     def read_body(self):
@@ -168,5 +175,59 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
         self.lines_body_raw = self.lines_file[self.size_header:]
 
         return self.lines_body_raw
+
+    def get_state(self):
+        """
+        Obtém o estado atual do ciclo da fita digital.
+        
+        Este método analisa as fases registradas no ciclo para determinar seu estado final.
+        O estado é determinado com base nas palavras-chave definidas em state_finalized_keys e state_aborted_keys.
+        
+        Returns:
+            str: Estado do ciclo, podendo ser:
+                - 'concluido': Quando encontra uma fase com palavras-chave de finalização
+                - 'abortado': Quando encontra uma fase com palavras-chave de aborto
+                - 'incompleto': Quando não encontra fases de finalização ou aborto
+                - 'erro': Em caso de falha na análise
+            
+        Raises:
+            KeyError: Se a chave 'fase' não existir no dicionário body
+            AttributeError: Se houver erro ao acessar os dados da fase
+            Exception: Para erros inesperados durante a análise
+            
+        Exemplo:
+            >>> reader = ReaderFitaDigitalAfr13("arquivo.txt")
+            >>> estado = reader.get_state()
+            >>> print(estado)
+            'concluido'
+        """
+        try:
+            if 'fase' not in self.body:
+                raise KeyError("Chave 'fase' não encontrada no dicionário body")
+                
+            # Verifica se é uma lista de fases
+            if isinstance(self.body['fase'], list):
+                # Procura por fases de conclusão ou cancelamento
+                for fase in self.body['fase']:
+                    # Verifica se a fase contém alguma das chaves de finalização
+                    if any(key in fase[1] for key in self.state_finalized_keys):
+                        return 'concluido'
+                    # Verifica se a fase contém alguma das chaves de aborto
+                    elif any(key in fase[1] for key in self.state_aborted_keys):
+                        return 'abortado'
+                # Se não encontrou nenhuma fase de finalização ou aborto, retorna em andamento
+                return 'incompleto'
+           
+                
+        except AttributeError as e:
+            _logger.error(f"Erro ao acessar dados da fase: {str(e)}")
+            return 'erro'
+        except Exception as e:
+            _logger.error(f"Erro inesperado ao obter estado: {str(e)}")
+            return 'erro'
+        
+     
+        
+    
        
 

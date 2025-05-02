@@ -7,9 +7,7 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="execute_python_code" type="object" class="oe_stat_button" string="Executar Código Python">
-                        
-                    </button>
+                   
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -32,17 +30,26 @@
                             <field name="color" widget="color_picker"/>
                         </group>
                         <group>
-                            <field name="form_view_id" help="Selecione o formulário específico a ser usado para este tipo de ciclo. O formulário deve ser do modelo 'afr.supervisorio.ciclos' e do tipo 'form'."/>
-                            <field name="reader_class_dataobject" help="Informe o nome da classe que implementa a interface de leitura de fita digital para este tipo de ciclo. Por exemplo: 'ReaderFitaDigitalAfr' ou 'ReaderFitaDigitalVapor'."/>
-                            <field name="method_name_create_cycle" help="Informe o nome do método que será chamado dinamicamente para criar os dados específicos do ciclo. Por exemplo: 'create_cycle_data_vapor'."/>
+                            <field name="reader_class_dataobject" help="Nome da classe que implementa a leitura da fita digital (ex: 'ReaderFitaDigitalAfr'). Esta classe deve estar definida no módulo fita_digital."/>
+                            <field name="method_name_create_cycle" help="Nome do método que será chamado para processar os dados da fita e criar o ciclo (ex: 'create_cycle_data_vapor'). Este método deve estar implementado em um modelo que herda de 'afr.supervisorio.ciclos'."/>
+                            <field name="path_ciclo" help="Caminho completo do diretório onde serão armazenados os arquivos de ciclo para este tipo específico."/>
+                            <field name="fases_fita_digital" help="Fases da fita digital que serão utilizadas para criar os dados do ciclo. Exemplo: 'LEAKTEST','ACONDICIONAMENTO','ESTERILIZACAO','LAVAGEM','AERACAO' "/>
+                          
+                        </group>
+                        <group>
+                            <field name="header_lines" help="Número de linhas que compõem o cabeçalho na fita digital, separando os dados do ciclo."/>
+                            <field name="header_campos_fita_digital" placeholder="Exemplo {'start_date':'Data:','operator_id':'Operador:'}" help="Dicionário que mapeia os campos da tabela com seus respectivos nomes na fita digital. Exemplo: {'start_date':'Data:','operator_id':'Operador:'}"/>
                         </group>
                     </group>
                     <div class="alert alert-info" role="alert">
                         <p><strong>Configuração do Tipo de Ciclo:</strong></p>
                         <ul>
-                            <li><strong>Form View ID:</strong> Selecione a visualização de formulário específica para este tipo de ciclo. Deve ser uma visualização do modelo 'afr.supervisorio.ciclos'.</li>
-                            <li><strong>Reader Class DataObject:</strong> Nome da classe que implementa a leitura da fita digital (ex: 'ReaderFitaDigitalAfr'). Esta classe deve estar definida no módulo fita_digital.</li>
-                            <li><strong>Method Name Create Cycle:</strong> Nome do método que será chamado para processar os dados da fita e criar o ciclo (ex: 'create_cycle_data_vapor'). Este método deve estar implementado em um modelo que herda de 'afr.supervisorio.ciclos'.</li>
+                            <li><strong>Reader Class DataObject:</strong> Classe responsável pela leitura da fita digital. Deve implementar a interface de leitura definida no módulo fita_digital.</li>
+                            <li><strong>Method Name Create Cycle:</strong> Método que processa os dados da fita e cria o ciclo. Deve estar implementado em um modelo que herda de 'afr.supervisorio.ciclos'.</li>
+                            <li><strong>Path Ciclo:</strong> Diretório onde serão armazenados os arquivos de ciclo para este tipo específico.</li>
+                            <li><strong>Header Lines:</strong> Número de linhas que compõem o cabeçalho na fita digital.</li>
+                            <li><strong>Header Campos Fita Digital:</strong> Mapeamento entre campos da tabela e seus nomes na fita digital.</li>
+                            <li><strong>Código Python:</strong> Código específico para processamento deste tipo de ciclo, caso necessário.</li>
                         </ul>
                     </div>
                     <notebook>
@@ -62,6 +69,9 @@
                                            decoration-danger="state in ['erro','cancelado','abortado']"/>
                                 </tree>
                             </field>
+                        </page>
+                        <page string="Ciclos Características">
+                            <field name="cycle_features_id"/>
                         </page>
                     </notebook>
                 </sheet>
@@ -84,6 +94,7 @@
                 <field name="name"/>
                 <field name="code"/>
                 <field name="form_view_id"/>
+                <field name="method_name_create_cycle"/>
                 <field name="cycle_count"/>
                 <field name="reader_class_dataobject"/>
                 <field name="active" invisible="1"/>
@@ -127,4 +138,4 @@
             </p>
         </field>
     </record>
-</odoo> 
+</odoo>

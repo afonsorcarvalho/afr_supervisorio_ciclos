@@ -9,16 +9,19 @@
                 <page string="Configuração Supervisorio">
                     <group>
                         <group>
-
                             <field name="cycle_type_id"/>
+                            <field name="cycle_path"/>
                             <field name="chamber_size"/>
-                           
+                        </group>
+                        <group>
+                            <!-- Botão para ler ciclos -->
+                            <button name="action_read_cycles" 
+                                    string="Ler Ciclos" 
+                                    type="object" 
+                                    class="oe_highlight"/>
                         </group>
                     </group>
-
                 </page>
-                
-                
             </xpath>
         </field>
     </record>

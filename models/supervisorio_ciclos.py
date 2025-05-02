@@ -19,8 +19,6 @@ class SupervisorioCiclos(models.Model):
     _check_company_auto = True
 
     directory_path = "/var/lib/odoo/filestore/odoo-steriliza/ciclos/"
-        
-    do = DataObjectFitaDigital(directory_path=directory_path)
    
     # Campos básicos
     name = fields.Char(string='Ciclo', required=True, tracking=True)
@@ -29,7 +27,19 @@ class SupervisorioCiclos(models.Model):
     equipment_category_id = fields.Many2one(related='equipment_id.category_id', string='Categoria do Equipamento', store=True)
     cycle_type_id = fields.Many2one('afr.cycle.type', string='Tipo de Ciclo', required=True,
         domain="[('active', '=', True)]", tracking=True)
+    cycle_features_id = fields.Many2one('afr.cycle.features', string='Ciclo Selecionado',
+         tracking=True, domain="[('cycle_type_id', '=', cycle_type_id)]")   
+
+    @api.onchange("cycle_features_id")
+    def _onchange_cycle_features_id(self):
+        vals = {}
+    
         
+        vals['duration_planned'] = self.cycle_features_id.tempo_estimado
+    
+    
+    
+        return vals
    
     # Campos de data/hora
     start_date = fields.Datetime(string='Data Início', default=fields.Datetime.now, tracking=True)
@@ -51,13 +61,29 @@ class SupervisorioCiclos(models.Model):
     # Campos adicionais
     notes = fields.Text(string='Observações', tracking=True)
     operator_id = fields.Many2one('res.users', string='Operador', 
-        default=lambda self: self.env.user, tracking=True,check_company=True)
+        default=lambda self: self.env.user, tracking=True)
     
     # Campos de arquivo
     file_path = fields.Char(
         string='Caminho do Arquivo',
         tracking=True,
         help='Caminho completo do arquivo de ciclo'
+    )
+    download_url = fields.Char(string='URL de Download', compute='_compute_download_url')
+    
+    @api.depends('file_path')
+    def _compute_download_url(self):
+        for record in self:
+            if record.file_path:
+                record.download_url = f'/web/content/download_file_txt_to_pdf/{record.id}'
+            else:
+                record.download_url = False
+
+    cycle_statistics_txt = fields.Text(
+        string='Estatísticas do Ciclo',
+        compute='_compute_cycle_statistics_txt',
+        store=False,
+        help='Estatísticas do ciclo'
     )
     cycle_txt = fields.Text(
         string='Conteúdo do Arquivo',
@@ -76,11 +102,20 @@ class SupervisorioCiclos(models.Model):
     cycle_pdf_filename = fields.Char(
         string='Nome do Arquivo PDF'
     )
-    cycle_graph = fields.Binary(
+    cycle_graph = fields.Image(
         string='Gráfico do Ciclo',
-        compute='compute_cycle_graph',
+        compute='compute_cycle_graph', 
         store=False,
-        help='Gráfico gerado a partir dos dados do ciclo'
+        help='Gráfico gerado a partir dos dados do ciclo',
+        # Opções disponíveis para o campo Image:
+        max_width=1920,  # Largura máxima da imagem
+        max_height=1080, # Altura máxima da imagem 
+        verify_resolution=True, # Verifica resolução da imagem
+        # Widget options:
+        # image - Widget padrão para imagens
+        # image_url - Para imagens via URL
+        # image_preview - Miniatura da 
+        # binary - Mostra como arquivo binário
     )
     cycle_graph_filename = fields.Char(
         string='Nome do Arquivo do Gráfico',
@@ -93,7 +128,8 @@ class SupervisorioCiclos(models.Model):
 
     # Campos computados
     state_color = fields.Integer(string='Cor do Status', compute='_compute_state_color')
-    is_overdue = fields.Boolean(string='Atrasado', compute='_compute_is_overdue', store=True)
+    is_overdue = fields.Boolean(string='Atrasado', compute='_compute_is_overdue')
+    str_is_overdue = fields.Char(string='Atrasado', compute='_compute_is_overdue')
     duration_planned = fields.Float(string='Duração Prevista (min)', compute='_compute_duration_planned')
 
     @api.depends('start_date', 'end_date')
@@ -104,6 +140,7 @@ class SupervisorioCiclos(models.Model):
                 record.duration = round(duration, 2)
             else:
                 record.duration = 0.0
+   
 
     @api.depends('state')
     def _compute_state_color(self):
@@ -119,21 +156,52 @@ class SupervisorioCiclos(models.Model):
         for record in self:
             record.state_color = colors.get(record.state, 0)
 
-    @api.depends('start_date', 'duration')
+    @api.depends('start_date', 'end_date', 'duration_planned')
     def _compute_is_overdue(self):
         now = fields.Datetime.now()
         for record in self:
-            if record.start_date and record.duration:
-                expected_end = record.start_date + timedelta(minutes=record.duration)
-                record.is_overdue = now > expected_end and record.state in ['em_andamento', 'aguardando']
-            else:
-                record.is_overdue = False
+            record.is_overdue = False
+            record.str_is_overdue = ""
+
+            #verifica se o ciclo está concluido e se a data de fim é maior que a data de inicio
+            tempo_decorrido_minutos = (record.end_date - record.start_date).total_seconds()/60
+            if record.state == 'concluido':
+                #verifica se o ciclo está atrasado
+                if tempo_decorrido_minutos > record.duration_planned:
+                    record.is_overdue = True
+                    atraso_minutos = int(tempo_decorrido_minutos - record.duration_planned)
+                    record.str_is_overdue = f"Atrasado em {atraso_minutos:02d} minutos"
+                    
+                if tempo_decorrido_minutos < record.duration_planned:    
+                
+                    record.is_overdue = False
+                    # Calcula a diferença em minutos e converte para inteiro
+                    adiantado_minutos = int(record.duration_planned - tempo_decorrido_minutos)
+                    record.str_is_overdue = f"{adiantado_minutos:02d} minutos adiantado"
+                if tempo_decorrido_minutos == record.duration_planned:
+                    record.is_overdue = False
+                    record.str_is_overdue = "Pontual"
+
+            if record.start_date and record.state == 'em_andamento':
+                tempo_decorrido_minutos = (now - record.start_date).total_seconds()/60
+                if tempo_decorrido_minutos > record.duration_planned:               
+                    record.is_overdue = True
+                    atraso_minutos = int(tempo_decorrido_minutos - record.duration_planned)
+                    record.str_is_overdue = f"Atrasado em {atraso_minutos:02d} minutos"
+                
+                if tempo_decorrido_minutos < record.duration_planned:
+                    record.is_overdue = False
+                    faltando_minutos = int(record.duration_planned - tempo_decorrido_minutos)
+                    record.str_is_overdue = f"Faltando {faltando_minutos:02d} minutos"
+                
+               
+               
 
     @api.depends('cycle_type_id')
     def _compute_duration_planned(self):
         for record in self:
             # Aqui você pode definir uma duração padrão baseada no tipo de ciclo
-            record.duration_planned = 60.0  # valor padrão de 60 minutos
+            record.duration_planned = record.cycle_features_id.tempo_estimado # valor padrão de 60 minutos
 
     @api.onchange('equipment_id')
     def _onchange_equipment(self):
@@ -185,25 +253,33 @@ class SupervisorioCiclos(models.Model):
             raise UserError('Apenas ciclos pausados podem ser retomados.')
         self.write({'state': 'em_andamento'})
     
-    def action_ler_diretorio_ciclos(self,equipment_alias=None,data_inicial=None,data_final=None):
+    def action_ler_diretorio_ciclos(self,equipment_alias=None,equipment_ns=None,equipment_id=None,data_inicial=None,data_final=None):
         #self.ensure_one()
-        equipment_alias = equipment_alias or self.equipment_id.apelido
+        _logger.info(f"action_ler_diretorio_ciclos equipamento: {equipment_id}")
+        if not equipment_id:
+            if equipment_alias:
+                equipment_id = self.env['engc.equipment'].search([('apelido', '=', equipment_alias)], limit=1)
+            if not equipment_id:
+                equipment_id = self.env['engc.equipment'].search([('serial_number', '=', equipment_ns)], limit=1)
+            if not equipment_id:
+                if not self.equipment_id:
+                    raise UserError("Nenhum equipamento informado.")
+                equipment_id = self.equipment_id
+        _logger.info(f"equipment_id: {equipment_id}")
         data_inicial = data_inicial or datetime.now() - timedelta(days=365)
         data_final = data_final or datetime.now()
 
-        lista_arquivos = self.ler_diretorio_ciclos(equipment_alias,data_inicial,data_final)
+        lista_arquivos = self.ler_diretorio_ciclos(equipment_id=equipment_id,data_inicial=data_inicial,data_final=data_final)
         _logger.debug(f"lista_arquivos: {lista_arquivos}")
 
-        self.update_ciclos(lista_arquivos,equipment_alias)
-    
+        self.processar_ciclos(lista_arquivos,equipment_id=equipment_id)
+  
+    def processar_ciclos(self,lista_arquivos,equipment_id=None):
 
-
-    def update_ciclos(self,lista_arquivos,equipment_alias):
-
-        equipment_alias = equipment_alias or self.equipment_id.apelido
-        equipment_id = self.env['engc.equipment'].search([('apelido', '=', equipment_alias)], limit=1)
+        # equipment_alias = equipment_alias or self.equipment_id.apelido
+        # equipment_id = self.env['engc.equipment'].search([('apelido', '=', equipment_alias)], limit=1)
         if not equipment_id:
-            raise UserError(f"Equipamento {equipment_alias} não encontrado")
+            raise UserError(f"Equipamento não informado equipment_id=None")
  
         for arquivo in lista_arquivos:
             #verifica se o ciclo já existe
@@ -212,14 +288,13 @@ class SupervisorioCiclos(models.Model):
             ciclo = self.env['afr.supervisorio.ciclos'].search([('name', '=', ciclo_name)])
             if ciclo:
                 _logger.debug(f"Ciclo {ciclo_name} já existe. Update dados do ciclo")
+                ciclo.update_cycle(arquivo,equipment_id)
                 continue
                
-            _logger.debug(f"Ciclo {ciclo_name} sendo criado")
-            self.create_new_cycle(arquivo,equipment_id)
+            _logger.debug(f"Ciclo {ciclo_name} sendo criado para o equipamento {equipment_id}")
+            self.update_cycle(arquivo,equipment_id)
 
 
-    
-        
     def _carregar_classe_leitor(self, equipment_id):
             """
             Carrega dinamicamente a classe do leitor de fita baseado no tipo de equipamento.
@@ -260,28 +335,23 @@ class SupervisorioCiclos(models.Model):
                 
             return classe_leitor
 
-    def create_new_cycle(self,arquivo,equipment_id):
-        #self.ensure_one()
-        if not equipment_id.cycle_type_id:
-            raise UserError(f"Equipamento {equipment_id.name} não possui tipo de ciclo definido")
+    def update_cycle(self,arquivo,equipment_id):
         
-        cycle_type_id = equipment_id.cycle_type_id
+        try:
+            do = self._get_dataobject(equipment_id=equipment_id,file_path=arquivo['path'] + '/' + arquivo['name'])
+            header, body = do.read_all_fita()
+        except Exception as e:
+            _logger.error(f"Erro ao atualizar ciclo: {str(e)}")
+            raise UserError(f"Erro ao atualizar ciclo: {str(e)}")
+        
+        #verificando se header e body estão definidos
+        if not header or not body:
+            _logger.error(f"Header ou body não definidos para o ciclo {arquivo['name']}")
+            return
+        
+        cycle_type_id = self.cycle_type_id if self.id else equipment_id.cycle_type_id
         file_path = os.path.join(arquivo['path'], arquivo['name'])
-        
-        # Lê o conteúdo do arquivo PDF em modo binário
         pdf_path = file_path.replace('.txt', '.pdf')
-        # try:
-        #     with open(pdf_path, 'rb') as pdf_file:
-        #         pdf_content = pdf_file.read()
-        # except Exception as e:
-        #     _logger.error(f"Erro ao ler arquivo PDF {pdf_path}: {str(e)}")
-        #     pdf_content = None
-
-        reader_class = self._carregar_classe_leitor(equipment_id)
-        self.do.register_reader_fita(reader_class(file_path))
-        header, body = self.do.read_all_fita()
-        _logger.debug(f"header: {header}")
-        _logger.debug(f"body: {body}")
         
         # Prepara os valores base
         base_values = {
@@ -301,13 +371,14 @@ class SupervisorioCiclos(models.Model):
         if not hasattr(self, metodo_nome):
             raise UserError(f"Método '{metodo_nome}' não encontrado para o tipo de ciclo {cycle_type_id.name}")
         
-        create_cycle_method = getattr(self, metodo_nome)
-        dados = create_cycle_method(header, body, values=base_values)
+        update_cycle_method = getattr(self, metodo_nome)
+        dados = update_cycle_method(header, body, values=base_values)
+
         
 
    
                 
-    def ler_diretorio_ciclos(self,equipment_alias,data_inicial ,data_final):
+    def ler_diretorio_ciclos(self,equipment_alias=None,equipment_ns=None,equipment_id=None,data_inicial='2025-03-23',data_final=None):
         """
         Lê o diretório de ciclos e filtra por data.
 
@@ -349,10 +420,39 @@ class SupervisorioCiclos(models.Model):
                 data_final = datetime.strptime(data_final, '%Y-%m-%d')
             except ValueError as e:
                 raise UserError(f"Formato de data final inválido. Use YYYY-MM-DD: {str(e)}")
+        
+        if isinstance(equipment_id,int):
+            equipment_id = self.env['engc.equipment'].browse(equipment_id)
+            if not equipment_id:
+                raise UserError(f"Nenhum equipamento encontrado com id = {equipment_id}.")
+            
+        if not equipment_id:
+            #procurar equipamento
+            if equipment_alias:
+                equipment_id = self.env['engc.equipment'].search([('apelido', '=', equipment_alias)], limit=1)
+            elif equipment_ns:
+                equipment_id = self.env['engc.equipment'].search([('serial_number', '=', equipment_ns)], limit=1)
+                if not equipment_id:
+                    raise UserError("Nenhum equipamento informado.")
 
-        lista_arquivos = self.do.ler_diretorio_ciclos(directory=equipment_alias,extension_file_search=None,data_inicial=data_inicial,data_final=data_final)       
+            
+
+        #Atualizando DataObjectFitaDigital 
+        if not equipment_id.cycle_type_id:
+            raise UserError(f"Equipamento {equipment_alias} não possui tipo de ciclo definido")
         
+        path_ciclo =equipment_id.cycle_type_id.path_ciclo
+        if not path_ciclo:
+            raise UserError(f"Equipamento {equipment_alias} não possui path_ciclo do tipo de ciclo definido")
         
+        #Atualizando DataObjectFitaDigital 
+        do = self._get_dataobject(equipment_id=equipment_id)
+        
+             
+        
+        lista_arquivos = do.ler_diretorio_ciclos(directory_path=equipment_id.cycle_path,extension_file_search=None,data_inicial=data_inicial,data_final=data_final)       
+        
+        _logger.debug(f"lista_arquivos: {lista_arquivos}")
         return lista_arquivos
   
     @api.depends('file_path')
@@ -368,123 +468,373 @@ class SupervisorioCiclos(models.Model):
                     record.cycle_txt = False
             else:
                 record.cycle_txt = False
-  
+
+    def _get_dataobject(self,equipment_id=None,file_path=None):
+        _logger.debug(f"_get_dataobject equipment_id: {equipment_id}")
+        equipment_id = self.equipment_id if self.id else equipment_id
+        if not equipment_id:
+            raise UserError("Nenhum equipamento informado")
+        cycle_type_id = self.cycle_type_id if self.id else equipment_id.cycle_type_id
+
+        
+        if not cycle_type_id:
+            if self.id:
+                raise UserError(f"O ciclo {self.name} não possui tipo de ciclo definido. \n")
+            if equipment_id:
+                raise UserError(f"O equipamento {equipment_id} não possui tipo de ciclo definido. \n")
+            raise UserError("Nenhum tipo de ciclo informado")
+        
+        #diretorio onde os ciclos estão armazenados
+        path_ciclo = equipment_id.cycle_path
+        
+        #verifica se o diretorio onde os ciclos estão armazenados está definido
+        if not path_ciclo:
+            raise UserError(f"Equipamento {equipment_id} não possui path_ciclo do tipo de ciclo definido")
+        #criando o objeto DataObjectFitaDigital
+        do = DataObjectFitaDigital(directory_path=path_ciclo)
+
+        #se não for informado o file_path, retorna o objeto DataObjectFitaDigital
+        if not file_path:
+            return do
+
+        #verifica se o header_lines está definido
+        if not cycle_type_id.header_lines:
+            if self.id:
+                raise UserError(f"O ciclo {self.name} não possui header_lines do tipo de ciclo definido")
+            if equipment_id:
+                raise UserError(f"O equipamento {equipment_id} não possui header_lines do tipo de ciclo definido")
+            
+            raise UserError("Nenhum header_lines no tipo de ciclo foi informado")
+        
+        #verificando se o leitor de fita digital está definido
+        nome_classe_leitor = cycle_type_id.reader_class_dataobject
+        if not nome_classe_leitor:
+            if self.id:
+                raise UserError(f"O ciclo {self.name} não possui reader_class_dataobject do tipo de ciclo definido")
+            if equipment_id:
+                raise UserError(f"O equipamento {equipment_id} não possui reader_class_dataobject do tipo de ciclo definido")
+            
+            raise UserError("Nenhum reader_class_dataobject no tipo de ciclo foi informado")
+        
+
+        reader_class = self._carregar_classe_leitor(equipment_id)
+        _logger.debug(f"file_path: {file_path}")
+       
+        do.register_reader_fita(reader_class(file_path), 
+                               size_header=cycle_type_id.header_lines)
+       
+        
+
+        return do
+    
     @api.depends('cycle_txt')
+    def _compute_cycle_statistics_txt(self):
+        """
+        Calcula e formata as estatísticas do ciclo em texto.
+        Gera uma tabela formatada com as estatísticas de cada fase do ciclo.
+
+        """
+        for record in self:
+            do = self._get_dataobject(record.equipment_id,record.file_path)
+            if record.cycle_txt:
+                try:
+                    # Registra o leitor de fita e lê os dados
+                    #reader_class = self._carregar_classe_leitor(record.equipment_id)
+                    # do.register_reader_fita(reader_class(record.file_path), 
+                    #                            size_header=record.equipment_id.cycle_type_id.header_lines)    
+                    res = do.read_all_fita()
+                    print(f"res: {res}")
+                    fases_fita_digital = record.cycle_type_id.fases_fita_digital.split(',')
+                    fases_fita_digital = [fase.strip() for fase in fases_fita_digital]
+                    _logger.debug(f"fases_fita_digital: {fases_fita_digital}")
+                    estatisticas, _ = do.calcular_estatisticas_ciclo(fases=fases_fita_digital)
+                        
+                except Exception as e:
+                    _logger.error(f"Erro ao calcular estatísticas: {str(e)}")
+                    estatisticas = False
+            else:
+                estatisticas = False
+
+            # Inicializa o texto de estatísticas
+            record.cycle_statistics_txt = f"ESTATÍSTICAS DO CICLO ({record.name})\n\n"
+            
+            if estatisticas:
+                # Para cada fase do ciclo
+                for fase, dados in estatisticas.items():
+                    
+                    try:
+                        # Adiciona cabeçalho da fase
+                        record.cycle_statistics_txt += f"\n### {fase} ###\n"
+                        record.cycle_statistics_txt += f"Duração: {dados['Duration']}\n\n"
+
+                        # Calcula larguras das colunas
+                        max_param_length = max(len(param) for param in dados.keys() if param != 'Duration')
+                        col_widths = {
+                            'parametro': max_param_length + 2,
+                            'valores': 12
+                        }
+                    
+                    except Exception as e:
+                        _logger.error(f"Erro de leitura de dados: {str(e)}")
+                        record.cycle_statistics_txt += f"Erro de leitura de dados: {str(e)}\n"
+                        record.cycle_statistics_txt += f"header columns: {dados.keys()}\n"
+                        continue
+                    # Cria cabeçalho da tabela
+                    header = "{:<{}} {:<{}} {:<{}} {:<{}} {:<{}}\n".format(
+                        "Parâmetro", col_widths['parametro'],
+                        "Máxima", col_widths['valores'],
+                        "Mínima", col_widths['valores'],
+                        "Média", col_widths['valores'],
+                        "Moda", col_widths['valores']
+                    )
+                    
+                    # Adiciona linha separadora
+                    total_width = col_widths['parametro'] + (col_widths['valores'] * 4) + 4
+                    record.cycle_statistics_txt += header
+                    record.cycle_statistics_txt += "-" * total_width + "\n"
+                    
+                    # Adiciona estatísticas de cada parâmetro
+                    for param, valores in dados.items():
+                        if param != 'Duration':
+                            linha = "{:<{}} {:<{}.2f} {:<{}.2f} {:<{}.2f} {:<{}.2f}\n".format(
+                                param, col_widths['parametro'],
+                                valores['max'], col_widths['valores'],
+                                valores['min'], col_widths['valores'],
+                                valores['media'], col_widths['valores'],
+                                valores['moda'], col_widths['valores']
+                            )
+                            record.cycle_statistics_txt += linha
+                    
+                    record.cycle_statistics_txt += "\n"
+            else:
+                record.cycle_statistics_txt += "Não foi possível calcular as estatísticas do ciclo."
+
     def compute_cycle_graph(self):
+        
         """
         Calcula e gera o gráfico do ciclo a partir dos dados da fita digital.
         O gráfico mostra a temperatura e pressão ao longo do tempo, com marcações
         das fases do ciclo e o tempo entre cada fase.
         """
+
         for record in self:
+            do = self._get_dataobject(record.equipment_id,record.file_path)
             if not record.cycle_txt:
                 record.cycle_graph = False
                 continue
                 
             try:
-                import matplotlib.pyplot as plt
-                import matplotlib.dates as mdates
-                import io
-                import base64
-                
-                # Cria uma figura e dois eixos com escalas diferentes
-                fig, ax1 = plt.subplots(figsize=(16, 9))
-                ax2 = ax1.twinx()  # Cria um segundo eixo Y compartilhando o mesmo eixo X
-                
-                # Registra o leitor de fita e lê os dados
-                reader_class = self._carregar_classe_leitor(record.equipment_id)
-                self.do.register_reader_fita(reader_class(record.file_path))
-                header, body = self.do.read_all_fita()
-                
-                # Extrai os dados do body
-                times = []
-                temperatures = []
-                pressures = []
-                
-                for row in body.get('data', []):
-                    if len(row) >= 3:
-                        # Usa o datetime diretamente do objeto
-                        times.append(row[0])
-                        pressures.append(float(row[1]))  # PCI(Bar)
-                        temperatures.append(float(row[2]))  # TCI(Celsius)
-                
-                # Configura o formato do eixo X para mostrar HH:mm:ss
-                ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
-                ax1.xaxis.set_major_locator(plt.MaxNLocator(50)) # Define 50 valores no eixo X
-                ax1.yaxis.set_major_locator(plt.MaxNLocator(20)) # Define 20 valores no eixo Y da temperatura
-                ax2.yaxis.set_major_locator(plt.MaxNLocator(20)) # Define 20 valores no eixo Y da pressão
-                
-                # Rotaciona os rótulos do eixo X em 45 graus e ajusta o alinhamento
-                plt.setp(ax1.get_xticklabels(), rotation=90, ha='right', fontsize=6)
-                
-                # Plota temperatura no eixo Y esquerdo
-                color1 = '#1f77b4'  # Azul
-                ax1.plot(times, temperatures, color=color1, label='Temperatura (°C)')
-                ax1.set_xlabel('Tempo (HH:mm:ss)')
-                ax1.set_ylabel('Temperatura (°C)', color=color1)
-                ax1.tick_params(axis='y', labelcolor=color1)
-                ax1.set_ylim(0, 100)  # Define escala de temperatura de 0 a 100°C
-                
-                # Plota pressão no eixo Y direito
-                color2 = '#d62728'  # Vermelho
-                ax2.plot(times, pressures, color=color2, label='Pressão (bar)')
-                ax2.set_ylabel('Pressão (bar)', color=color2)
-                ax2.tick_params(axis='y', labelcolor=color2)
-                ax2.set_ylim(-1, 0)  # Define escala de pressão de -1 a 0 bar
-                
-                # Adiciona as fases como linhas verticais
-                fases_permitidas = ['LEAK-TEST','ACONDICIONAMENTO','ESTERILIZACAO','LAVAGEM','AERACAO','CICLO FINALIZADO']
-                fases_validas = []
-                
-                # Filtra apenas as fases permitidas
-                for fase in body.get('fase', []):
-                    if len(fase) >= 2 and fase[1] in fases_permitidas:
-                        fases_validas.append(fase)
-                
-                # Adiciona as fases e calcula o tempo entre elas
-                for i, fase in enumerate(fases_validas):
-                    tempo_fase = fase[0].strftime('%H:%M:%S')
-                    ax1.axvline(x=fase[0], color='g', linestyle='--', alpha=0.5)
-                    
-                    # Calcula o tempo até a próxima fase
-                    if i < len(fases_validas) - 1:
-                        tempo_entre_fases = fases_validas[i+1][0] - fase[0]
-                        minutos = tempo_entre_fases.total_seconds() / 60
-                        texto_fase = f"{tempo_fase} - {fase[1]}\n{int(minutos)} min"
-                    else:
-                        texto_fase = f"{tempo_fase} - {fase[1]}"
-                        
-                    ax1.text(fase[0], ax1.get_ylim()[0] + 2, 
-                            texto_fase,
-                            rotation=90,
-                            verticalalignment='bottom',
-                            fontsize=8)
-                                
-                # Adiciona grade
-                ax1.grid(True, alpha=0.3)
-                
-                # Adiciona título
-                plt.title('Curvas Paramétricas do Ciclo')
-                
-                # Adiciona legendas
-                lines1, labels1 = ax1.get_legend_handles_labels()
-                lines2, labels2 = ax2.get_legend_handles_labels()
-                ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
-                
-                # Ajusta o layout para evitar sobreposição
-                plt.tight_layout()
-                
-                # Salva o gráfico em um buffer de memória
-                buf = io.BytesIO()
-                plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-                buf.seek(0)
-                
-                # Converte para base64
-                record.cycle_graph = base64.b64encode(buf.getvalue())
-                
-                # Fecha a figura para liberar memória
-                plt.close()
-                
+                process_graph = self.process_graph(record,do)
             except Exception as e:
-                _logger.error(f"Erro ao gerar gráfico: {str(e)}")
+                _logger.error(f"Erro ao processar gráfico.: {str(e)}")
                 record.cycle_graph = False
+                continue
+
+            
+
+    def process_graph(self,record,do):
+        """
+        Processa o gráfico do ciclo a partir dos dados da fita digital.
+        """
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.dates as mdates
+            import io
+            import base64
+            
+            # Cria uma figura e dois eixos com escalas diferentes
+            fig, ax1 = plt.subplots(figsize=(16, 9))
+            ax2 = ax1.twinx()  # Cria um segundo eixo Y compartilhando o mesmo eixo X
+            
+            # Registra o leitor de fita e lê os dados
+            reader_class = self._carregar_classe_leitor(record.equipment_id)
+            do.register_reader_fita(reader_class(record.file_path))
+            
+            header, body = do.read_all_fita()
+            
+            # Extrai os dados do body
+            times = []
+            temperatures = []
+            pressures = []
+            
+            for row in body.get('data', []):
+                if len(row) >= 3:
+                    # Usa o datetime diretamente do objeto
+                    times.append(row[0])
+                    pressures.append(float(row[1]))  # PCI(Bar)
+                    temperatures.append(float(row[2]))  # TCI(Celsius)
+            
+            # Configura o formato do eixo X para mostrar HH:mm:ss
+            ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+            ax1.xaxis.set_major_locator(plt.MaxNLocator(50)) # Define 50 valores no eixo X
+            ax1.yaxis.set_major_locator(plt.MaxNLocator(20)) # Define 20 valores no eixo Y da temperatura
+            ax2.yaxis.set_major_locator(plt.MaxNLocator(20)) # Define 20 valores no eixo Y da pressão
+            
+            # Rotaciona os rótulos do eixo X em 45 graus e ajusta o alinhamento
+            plt.setp(ax1.get_xticklabels(), rotation=90, ha='right', fontsize=6)
+            
+            # Plota temperatura no eixo Y esquerdo
+            color1 = '#1f77b4'  # Azul
+            ax1.plot(times, temperatures, color=color1, label='Temperatura (°C)')
+            ax1.set_xlabel('Tempo (HH:mm:ss)')
+            ax1.set_ylabel('Temperatura (°C)', color=color1)
+            ax1.tick_params(axis='y', labelcolor=color1)
+            ax1.set_ylim(0, 100)  # Define escala de temperatura de 0 a 100°C
+            
+            # Plota pressão no eixo Y direito
+            color2 = '#d62728'  # Vermelho
+            ax2.plot(times, pressures, color=color2, label='Pressão (bar)')
+            ax2.set_ylabel('Pressão (bar)', color=color2)
+            ax2.tick_params(axis='y', labelcolor=color2)
+            ax2.set_ylim(-1, 0)  # Define escala de pressão de -1 a 0 bar
+            
+            # Adiciona as fases como linhas verticais
+            fases_permitidas = ['LEAK-TEST','FALHA LEAK-TEST','ACONDICIONAMENTO','ESTERILIZACAO','LAVAGEM','AERACAO','CICLO ABORTADO','CICLO FINALIZADO']
+            fases_validas = []
+            
+            # Filtra apenas as fases permitidas
+            for fase in body.get('fase', []):
+                if len(fase) >= 2 and fase[1] in fases_permitidas:
+                    fases_validas.append(fase)
+            
+            # Adiciona as fases e calcula o tempo entre elas
+            for i, fase in enumerate(fases_validas):
+                tempo_fase = fase[0].strftime('%H:%M:%S')
+                ax1.axvline(x=fase[0], color='g', linestyle='--', alpha=0.5)
+                
+                # Calcula o tempo até a próxima fase
+                if i < len(fases_validas) - 1:
+                    tempo_entre_fases = fases_validas[i+1][0] - fase[0]
+                    minutos = tempo_entre_fases.total_seconds() / 60
+                    texto_fase = f"{tempo_fase} - {fase[1]}\n{int(minutos)} min"
+                else:
+                    texto_fase = f"{tempo_fase} - {fase[1]}"
+                    
+                ax1.text(fase[0], ax1.get_ylim()[0] + 2, 
+                        texto_fase,
+                        rotation=90,
+                        verticalalignment='bottom',
+                        fontsize=8)
+                            
+            # Adiciona grade
+            ax1.grid(True, alpha=0.3)
+            
+            # Adiciona título
+            plt.title(f'Curvas Paramétricas do Ciclo {record.name}')
+            
+            # Adiciona legendas
+            lines1, labels1 = ax1.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
+            
+            # Ajusta o layout para evitar sobreposição
+            plt.tight_layout()
+            
+            # Salva o gráfico em um buffer de memória
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+            buf.seek(0)
+            
+            # Converte para base64
+            record.cycle_graph = base64.b64encode(buf.getvalue())
+            
+            # Fecha a figura para liberar memória
+            plt.close()
+                
+        except Exception as e:
+            _logger.error(f"Erro ao gerar gráfico: {str(e)}")
+            record.cycle_graph = False
+
+    def get_view(self, view_id=None, view_type='form', **options):
+        """
+        Sobrescreve o método get_view para retornar o formulário específico configurado no tipo de ciclo
+        quando o view_type for 'form'.
+        
+        Args:
+            view_id: ID da view a ser carregada
+            view_type: Tipo da view ('form', 'tree', etc)
+            options: Opções adicionais
+            
+        Returns:
+            dict: Dados da view
+        """
+        _logger.debug(f"view_id: {view_id}")
+        _logger.debug(f"view_type: {view_type}")
+        _logger.debug(f"options: {options}")
+        _logger.debug(f"self: {self}")
+        _logger.debug(f"self.cycle_type_id: {self.cycle_type_id}")
+
+        # Se for view tipo form e tiver cycle_type_id configurado
+        # if view_type == 'form':
+        #     view_id = self.cycle_type_id.form_view_id.id or	2211
+        #     _logger.debug(f"Usando view específica do tipo de ciclo: {view_id}")
+            
+        res = super(SupervisorioCiclos, self).get_view(view_id, view_type, **options)
+        _logger.debug(f"res: {res}")
+            
+        return res
+
+    def _get_file_content(self):
+        """Lê o conteúdo do arquivo TXT para o relatório PDF"""
+        self.ensure_one()
+        if not self.file_path or not os.path.exists(self.file_path):
+            return "Arquivo não encontrado"
+            
+        try:
+            with open(self.file_path, 'r', encoding='utf-8') as file:
+                return file.read()
+        except Exception as e:
+            _logger.error(f"Erro ao ler arquivo: {str(e)}")
+            return f"Erro ao ler arquivo: {str(e)}"
+
+    @api.depends('cycle_txt')
+    def _compute_statistics(self):
+        """
+        Calcula as estatísticas do ciclo a partir do arquivo de fita digital.
+        """
+        for record in self:
+            record.cycle_statistics_txt = "teste"
+        # for record in self:
+        #     if not record.file_path or not os.path.exists(record.file_path):
+        #         record.cycle_statistics_txt = False
+        #         continue
+
+        #     try:
+        #         # Cria uma instância do leitor apropriado baseado no tipo de equipamento
+        #         reader_class = self._carregar_classe_leitor(record.equipment_id)
+        #         if not reader_class:
+        #             record.cycle_statistics_txt = False
+        #             continue
+
+        #         reader = reader_class(record.file_path)
+        #         do = self._get_dataobject(record.equipment_id.apelido)
+        #         statistics = reader.
+
+        #         # Formata as estatísticas para exibição
+        #         formatted_stats = []
+                
+        #         # Adiciona tempo total
+        #         formatted_stats.append(f"Tempo Total: {statistics['tempo_total']}")
+                
+        #         # Adiciona tempo por fase
+        #         formatted_stats.append("\nTempo por Fase:")
+        #         for fase, tempo in statistics['tempo_por_fase_formatado'].items():
+        #             formatted_stats.append(f"- {fase}: {tempo}")
+                
+        #         # Adiciona estatísticas de temperatura
+        #         formatted_stats.append("\nTemperatura:")
+        #         formatted_stats.append(f"- Máxima: {statistics['temperatura_maxima']}")
+        #         formatted_stats.append(f"- Mínima: {statistics['temperatura_minima']}")
+        #         formatted_stats.append(f"- Média: {statistics['temperatura_media']}")
+                
+        #         # Adiciona estatísticas de pressão
+        #         formatted_stats.append("\nPressão:")
+        #         formatted_stats.append(f"- Máxima: {statistics['pressao_maxima']}")
+        #         formatted_stats.append(f"- Mínima: {statistics['pressao_minima']}")
+        #         formatted_stats.append(f"- Média: {statistics['pressao_media']}")
+
+        #         record.cycle_statistics_txt = '\n'.join(formatted_stats)
+
+        #     except Exception as e:
+        #         _logger.error(f"Erro ao calcular estatísticas: {str(e)}")
+        #         record.cycle_statistics_txt = False

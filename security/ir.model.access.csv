@@ -2,4 +2,6 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_afr_cycle_type_user,afr.cycle.type.user,model_afr_cycle_type,base.group_user,1,0,0,0
 access_afr_cycle_type_manager,afr.cycle.type.manager,model_afr_cycle_type,base.group_system,1,1,1,1
 access_afr_supervisorio_ciclos_user,afr.supervisorio.ciclos.user,model_afr_supervisorio_ciclos,base.group_user,1,1,1,0
+
 access_afr_supervisorio_ciclos_manager,afr.supervisorio.ciclos.manager,model_afr_supervisorio_ciclos,base.group_system,1,1,1,1
+access_afr_cycle_features_manager,afr.cycle.features.manager,model_afr_cycle_features,,1,1,1,1

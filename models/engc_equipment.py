@@ -15,7 +15,11 @@ class EngcEquipment(models.Model):
     cycle_model = fields.Many2one(string='Modelo de ciclo', comodel_name='steril_supervisorio.cycle_model', ondelete='restrict')
     cycle_type_id = fields.Many2one(string='Tipo de ciclo', comodel_name='afr.cycle.type', ondelete='restrict')
     chamber_size = fields.Float(string="Volume Câmara (L)")
+    cycle_path = fields.Char(string="Diretorio do ciclo")
     
+    def action_read_cycles(self):
+        _logger.info(f"Lendo ciclos do equipamento {self}")
+        self.env['afr.supervisorio.ciclos'].action_ler_diretorio_ciclos(equipment_id=self)
 
 
 

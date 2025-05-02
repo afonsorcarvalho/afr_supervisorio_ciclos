@@ -14,11 +14,35 @@ class CycleType(models.Model):
     name = fields.Char(string='Nome', required=True, tracking=True)
     code = fields.Char(string='Código', required=True, tracking=True)
     description = fields.Text(string='Descrição', tracking=True)
+    path_ciclo = fields.Text(string='Caminho do ciclo', tracking=True)
+    cycle_features_id = fields.One2many('afr.cycle.features', 'cycle_type_id', string='Ciclo Características', tracking=True, copy=False)
     
     # Campos de controle
     sequence = fields.Integer(string='Sequência', default=10)
     active = fields.Boolean(string='Ativo', default=True, tracking=True)
     color = fields.Integer(string='Cor')
+    
+    # Campos de leitura de fita digital
+    header_lines = fields.Integer(
+        string='Número de linhas de cabeçalho',
+        default=1,
+        help='Número de linhas de cabeçalho na fita digital separando os dados do ciclo'
+    )
+    header_campos_fita_digital = fields.Char(
+        string='Campos da fita digital',
+        help='''Campos do cabeçalho da fita digital estilo dict com campo da tabela 
+        e nome do campo na fita digital. Esses campos serão procurados na 
+        fita digital para criar os dados do ciclo.
+        Exemplo {'start_date':'Data:','operator_id':'Operador:'}'''
+    )
+    fases_fita_digital = fields.Char(
+        string='Fases da fita digital',
+        help='''
+        Fases da fita digital que serão utilizadas para criar os dados do ciclo
+        Exemplo: 'LEAKTEST','ACONDICIONAMENTO','ESTERILIZACAO','LAVAGEM','AERACAO' '''
+    )
+
+
     reader_class_dataobject = fields.Char(
         string='Classe do Leitor de fita', 
         tracking=True,
@@ -114,3 +138,26 @@ class CycleType(models.Model):
                 'success': False,
                 'message': f'Erro ao executar código: {str(e)}'
             } 
+
+    def copy(self, default=None):
+        """
+        Cria uma cópia do registro atual do tipo de ciclo.
+        
+        Args:
+            default (dict): Valores padrão para sobrescrever na cópia
+            
+        Returns:
+            record: Novo registro criado
+        """
+        self.ensure_one()
+        if default is None:
+            default = {}
+        
+        # Adiciona sufixo ao nome e código para evitar duplicidade
+        default.update({
+            'name': f"{self.name} (Cópia)",
+            'code': f"{self.code}_COPY",
+            'sequence': self.sequence + 1
+        })
+        
+        return super(CycleType, self).copy(default)

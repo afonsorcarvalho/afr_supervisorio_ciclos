@@ -2,6 +2,14 @@ from abc import ABC, abstractmethod
 import os
 from datetime import datetime
 
+class HeaderFields:
+    date_key = "Data:"
+    time_key = "Hora:"
+    equipment_key = "Equipamento:"
+    operator_key = "Operador:"
+    cycle_code_key = "Cod. ciclo:"
+    selected_cycle_key = "Ciclo Selecionado:"
+
 class ReaderFitaDigitalInterface(ABC):
     """
     Interface para leitura de fitas digitais de equipamentos.
@@ -11,6 +19,7 @@ class ReaderFitaDigitalInterface(ABC):
 
     Attributes:
         file_name (str): Caminho completo do arquivo de fita digital
+        
         header_fields (list): Lista dos campos do cabeçalho da fita digital
     """
 
@@ -21,13 +30,34 @@ class ReaderFitaDigitalInterface(ABC):
         Args:
             full_path_file (str): Caminho completo do arquivo a ser lido
         """
+        if not full_path_file:
+            raise ValueError("full_path_file não definido ao instanciar o leitor de fita digital")
         self.file_name = full_path_file
-        self.header_fields = ["Data:","Hora:","Ciclo:","Equipamento:","Operador:","Cod. ciclo:","Ciclo Selecionado:"]
+        
+        # Tamanho padrão do cabeçalho em bytes
         self.size_header = 25
+        
+        # Lista que armazenará todas as linhas do arquivo após a leitura
         self.lines_file = []
+        
+        # Lista que armazenará as linhas do corpo do arquivo sem processamento
+        # Útil para debug e análise do conteúdo bruto
         self.lines_body_raw = []
+        
+        # Dicionário que armazenará o corpo do arquivo após processamento
+        # Estrutura organizada dos dados do corpo da fita digital
         self.body = {}
+        
+        # Instância da classe que define as chaves do cabeçalho
+        # Facilita o acesso e manutenção das chaves utilizadas no cabeçalho
+        self.header_fields = HeaderFields()
 
+        self.state_finalized_keys = ["CICLO FINALIZADO", "CICLO CONCLUIDO","AERACAO"]
+        self.state_aborted_keys = ["CICLO ABORTADO"]
+    
+        
+       
+  
   
     def read_file(self):
         """
@@ -41,6 +71,7 @@ class ReaderFitaDigitalInterface(ABC):
             IOError: Se houver erro na leitura do arquivo
         """
         try:
+            print(f"Lendo o arquivo: {self.file_name}")
             with open(self.file_name, 'r') as file:
                 self.lines_file = file.readlines()
                 return self.lines_file
@@ -85,17 +116,32 @@ class ReaderFitaDigitalInterface(ABC):
             'change_date': datetime.fromtimestamp(os.path.getmtime(self.file_name)).strftime('%d-%m-%Y %H:%M:%S')
         }
         
+        # Itera sobre cada linha do conteúdo do arquivo
         for line in file_content:
-
-            # Limpa caracteres nulos e espaços em branco
+            # Remove caracteres nulos e espaços em branco do início e fim da linha
             line = line.replace('\x00', '').strip()
-            for field in self.header_fields:
+            
+            # Obtém todos os nomes dos campos do cabeçalho definidos na classe
+            header_fields_names = [getattr(self.header_fields, attr) for attr in dir(self.header_fields) if not attr.startswith('_')]
+            
+            # Itera sobre cada campo do cabeçalho
+            for field in header_fields_names:
+                
+                
+                # Se o campo for encontrado na linha, extrai seu valor
                 if field in line:
+                    # Divide a linha no campo e pega o valor após ele, removendo espaços
                     header_values[field] = line.split(field)[1].strip()
-        
-        return header_values
-        
 
+        print(f"header_values: {header_values}")
+        return header_values
+    
+    @abstractmethod
+    def get_state(self):
+        """
+        Obtém o estado da fita digital.
+        """
+        return ""
  
     def set_header_fields(self,fields_name):
         """
@@ -113,3 +159,34 @@ class ReaderFitaDigitalInterface(ABC):
     @abstractmethod
     def read_body(self):
         pass
+   
+    def get_fases(self, fases):
+        """
+        Obtém as fases do ciclo da fita digital filtrando apenas as fases enviadas como argumento.
+        
+        Args:
+            fases (list): Lista de fases a serem filtradas
+            
+        Returns:
+            list: Lista de fases encontradas que correspondem ao filtro
+        """
+        fases_filtradas = []
+        if self.body.get('fase'):
+            # Filtra as fases que estão na lista de fases desejadas
+            fases_filtradas = [fase[1] for fase in self.body['fase'] if fase[1] in fases]
+        else:
+            fases_filtradas = []
+        return fases_filtradas
+        
+    def get_parametros(self):
+        """
+        Obtém os parâmetros medidos na fita digital.
+        
+        Returns:
+            list: Lista de parâmetros encontrados
+        """
+        parametros = []
+        if self.body.get('header_columns'):
+            # Pega os parâmetros do cabeçalho excluindo a primeira coluna (horas)
+            parametros = self.body['header_columns'][1:]
+        return parametros

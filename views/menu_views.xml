@@ -3,13 +3,27 @@
     <!-- Menu principal -->
     <menuitem 
         id="menu_afr_supervisorio_ciclos"
-        name="Supervisório de Ciclos"
+        name="Supervisório"
         sequence="10"/>
 
     <!-- Submenu Operações -->
+    <!-- Action -->
+    <record id="action_afr_supervisorio_ciclos_ciclos" model="ir.actions.act_window">
+        <field name="name">Ciclos</field>
+        <field name="res_model">afr.supervisorio.ciclos</field>
+        <field name="view_mode">tree,form,calendar,pivot</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_empty_folder">
+                Não há ciclos cadastrados.
+            </p>
+            <p>
+                Os ciclos serão registrados automaticamente pelo sistema.
+            </p>
+        </field>
+    </record>
     <menuitem 
         id="menu_afr_supervisorio_ciclos_operations"
-        name="Operações"
+        name="Ciclos"
         parent="menu_afr_supervisorio_ciclos"
         sequence="10"/>
 
@@ -19,6 +33,10 @@
         parent="menu_afr_supervisorio_ciclos_operations"
         action="action_afr_supervisorio_ciclos_ciclos"
         sequence="1"/>
+    
+    <!-- Equipamentos -->
+    <menuitem name="Equipamentos" id="afr_supervisorio_ciclos.equipments_list_menu" parent="menu_afr_supervisorio_ciclos" action="engc_os.equipment_action_window" />
+    <menuitem name="Categorias" id="afr_supervisorio_ciclos.categorias_list_menu" parent="menu_afr_supervisorio_ciclos" action="engc_os.equipment_category_action_window" />
 
     <!-- Submenu Configurações -->
     <menuitem 
@@ -34,18 +52,4 @@
         action="action_cycle_type"
         sequence="1"/>
 
-    <!-- Action -->
-    <!-- <record id="action_afr_supervisorio_ciclos_ciclos" model="ir.actions.act_window">
-        <field name="name">Ciclos</field>
-        <field name="res_model">afr.supervisorio.ciclos</field>
-        <field name="view_mode">tree,form,calendar,pivot</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_empty_folder">
-                Não há ciclos cadastrados.
-            </p>
-            <p>
-                Os ciclos serão registrados automaticamente pelo sistema.
-            </p>
-        </field>
-    </record> -->
 </odoo> 
