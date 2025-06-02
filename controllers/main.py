@@ -69,7 +69,8 @@ class FileDownloadController(http.Controller):
         rodape_x = 330
         rodape_y = 10
         text_size = 8
-        leading = 0.2
+        leading = 0.1
+        line_space = 8
         # Verifica se o arquivo existe
         if not record.file_path or not os.path.exists(record.file_path):
             return request.not_found()
@@ -105,7 +106,7 @@ class FileDownloadController(http.Controller):
                     y = 800  # Reset posição Y
                 
                 pdf.drawString(50, y, line)
-                y -= 12  # Espaço entre linhas
+                y -= line_space  # Espaço entre linhas
             
             lines = record.cycle_statistics_txt.split('\n')
             y = 800 
@@ -123,7 +124,7 @@ class FileDownloadController(http.Controller):
                     y = 800  # Reset posição Y
 
                 pdf.drawString(50, y, line)
-                y -= 12  # Espaço entre linhas
+                y -= line_space  # Espaço entre linhas
             
             pdf.save()
             
