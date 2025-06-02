@@ -164,7 +164,11 @@ class SupervisorioCiclos(models.Model):
             record.str_is_overdue = ""
 
             #verifica se o ciclo está concluido e se a data de fim é maior que a data de inicio
-            tempo_decorrido_minutos = (record.end_date - record.start_date).total_seconds()/60
+            if record.end_date and record.start_date:
+                tempo_decorrido_minutos = (record.end_date - record.start_date).total_seconds()/60
+            else:
+                tempo_decorrido_minutos = (now - record.start_date).total_seconds()/60
+                
             if record.state == 'concluido':
                 #verifica se o ciclo está atrasado
                 if tempo_decorrido_minutos > record.duration_planned:
@@ -342,7 +346,7 @@ class SupervisorioCiclos(models.Model):
             header, body = do.read_all_fita()
         except Exception as e:
             _logger.error(f"Erro ao atualizar ciclo: {str(e)}")
-            raise UserError(f"Erro ao atualizar ciclo: {str(e)}")
+            raise UserError(f"Erro ao atualizar ciclos: {str(e)}")
         
         #verificando se header e body estão definidos
         if not header or not body:
