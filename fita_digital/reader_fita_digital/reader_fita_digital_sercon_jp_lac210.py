@@ -165,11 +165,11 @@ class ReaderFitaDigitalSerconJpLac210(ReaderFitaDigitalInterface):
             value = line.split()
             
             
-            if line.strip().startswith('LOTE.....'):
+            if line.strip().startswith('CICLO No'):
                 header['LOTE'] = line.split(':')[1].strip() or ''
                 continue
                 
-            if line.strip().startswith('CICLO No'):
+            if line.strip().startswith('CICLO.'):
                 header['CICLO'] = line.split(':')[1].strip().replace('\n', '') or ''
                 continue
 
@@ -178,8 +178,8 @@ class ReaderFitaDigitalSerconJpLac210(ReaderFitaDigitalInterface):
                 if setpoint != '':
                     setpoint = setpoint.split(' ')[0].strip()
                     setpoint = float(setpoint.replace(',', '.'))
-                    header['SET-POINT'] = setpoint
-                
+                    header['SETPOINT'] = setpoint
+                continue
             if len(value) == 2:
                 if value[1].startswith('INICIANDO'):
                     
