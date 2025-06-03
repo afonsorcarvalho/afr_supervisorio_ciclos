@@ -339,7 +339,8 @@ class ReaderFitaDigitalSerconJpLac210(ReaderFitaDigitalInterface):
                 if len(row) >= 3:
                     times.append(row[0])
                     pressures.append(float(row[2]))  # PCI(Bar)
-                    temperatures.append(float(row[1]))  # TCI(Celsius)
+                    temperatures.append(float(row[3]))  # TCI(Celsius)
+       
             
             # Configura o formato do eixo X para mostrar HH:mm:ss
             ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
