@@ -202,7 +202,7 @@
                 <field name="start_date"/>
                 <field name="end_date"/>
                 <field name="duration" widget="float_time"/>
-                <field name="operator_id" widget="many2one_avatar_employee"/>
+                <field name="operator_id" widget="many2one_avatar_employee" optional="hide"/>
                 <field name="company_id" optional="hide"/>
                 <field name="is_overdue" optional="hide" 
                  decoration-danger="is_overdue"
@@ -224,8 +224,9 @@
                 <field name="equipment_id"/>
                 <field name="equipment_nickname"/>
                 <field name="cycle_type_id"/>
+                <field name="cycle_features_id"/>
                 <field name="operator_id"/>
-                <field name="batch_number"/>
+                <field name="batch_number" string="Lote"/>
                 <separator/>
                 <filter string="Meus Ciclos" name="my_cycles" domain="[('operator_id', '=', uid)]"/>
                 <!-- <filter string="Atrasados" name="overdue" domain="[('is_overdue', '=', True)]"/> -->
@@ -234,8 +235,14 @@
                 <filter string="Aguardando" name="waiting" domain="[('state','=','aguardando')]"/>
                 <filter string="Concluídos" name="completed" domain="[('state','=','concluido')]"/>
                 <filter string="Cancelados" name="canceled" domain="[('state','=','cancelado')]"/>
+                <filter string="Erro" name="error" domain="[('state','=','erro')]"/>
+                <filter string="Abortados" name="aborted" domain="[('state','=','abortado')]"/>
+                <filter string="Pausados" name="paused" domain="[('state','=','pausado')]"/>
+                <filter string="Atrasados" name="overdue" domain="[('is_overdue', '=', True)]"/>
+
                 <group expand="0" string="Agrupar Por">
                     <filter string="Equipamento" name="equipment" context="{'group_by':'equipment_id'}"/>
+                    <filter string="Apelido" name="equipment_nickname" context="{'group_by':'equipment_nickname'}"/>
                     <filter string="Categoria de Equipamento" name="equipment_category" context="{'group_by':'equipment_category_id'}"/>
                     <filter string="Tipo de Ciclo" name="cycle_type" context="{'group_by':'cycle_type_id'}"/>
                     <filter string="Status" name="state" context="{'group_by':'state'}"/>

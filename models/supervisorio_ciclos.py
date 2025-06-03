@@ -128,7 +128,7 @@ class SupervisorioCiclos(models.Model):
 
     # Campos computados
     state_color = fields.Integer(string='Cor do Status', compute='_compute_state_color')
-    is_overdue = fields.Boolean(string='Atrasado', compute='_compute_is_overdue')
+    is_overdue = fields.Boolean(string='Atrasado', compute='_compute_is_overdue',store=True)
     str_is_overdue = fields.Char(string='Atrasado', compute='_compute_is_overdue')
     duration_planned = fields.Float(string='Duração Prevista (min)', compute='_compute_duration_planned')
 

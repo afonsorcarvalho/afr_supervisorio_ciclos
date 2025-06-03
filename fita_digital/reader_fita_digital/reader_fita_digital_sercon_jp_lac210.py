@@ -340,8 +340,8 @@ class ReaderFitaDigitalSerconJpLac210(ReaderFitaDigitalInterface):
                     times.append(row[0])
                     pressures.append(float(row[2]))  # PCI(Bar)
                     temperatures.append(float(row[3]))  # TCI(Celsius)
-       
-            
+
+
             # Configura o formato do eixo X para mostrar HH:mm:ss
             ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
             ax1.xaxis.set_major_locator(plt.MaxNLocator(50))
@@ -368,14 +368,15 @@ class ReaderFitaDigitalSerconJpLac210(ReaderFitaDigitalInterface):
             
             # Adiciona as fases como linhas verticais
             fases_permitidas = [
-                'INICIO DO AQUECIMENTO',
+                'INICIO DE PRE-VACUO',
                 
-                'INICIO DA HOMOGENIZACAO', 
+                'AQUECIMENTO C. INTERNA', 
                 'INICIO DA ESTERILIZACAO',
                 'TERMINO DA ESTERILIZACAO',
-                # 'INICIO DA DESCOMPRESSAO',
-                # 'TERMINO DA DESCOMPRESSAO',
-                # 'INICIO DA SECAGEM',
+                 'INICIO ESTERILIZACAO',
+                 'INICIO DESCOMPRESSAO',
+                 'INICIO SECAGEM',
+                 'FIM DE CICLO',
                 # 'TERMINO DA SECAGEM',
                 # 'FINAL DO CICLO'
             ]
@@ -412,8 +413,8 @@ class ReaderFitaDigitalSerconJpLac210(ReaderFitaDigitalInterface):
             ax1.grid(True, alpha=0.3)
 
             #Adiciona set-point
-            #TODO: Verificar se o header['TEMPERATURA DA AGUA'] se está pegando o valor correto
-            ax1.axhline(y=header.get(header['SETPOINT'], 0), color='black', linestyle='--', label='Set-Point')
+           
+            ax1.axhline(y=header.get('SETPOINT', 0), color='black', linestyle='--', label=f'Set-Point: {header.get("SETPOINT", 0)}')
             
             # Adiciona título
             plt.title(f'Curvas Paramétricas do Ciclo - {header.get("file_name", "Ciclo")}')
