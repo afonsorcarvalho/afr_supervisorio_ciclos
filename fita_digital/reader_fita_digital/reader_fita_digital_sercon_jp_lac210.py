@@ -165,7 +165,7 @@ class ReaderFitaDigitalSerconJpLac210(ReaderFitaDigitalInterface):
             value = line.split()
             
             
-            if line.strip().startswith('CICLO No'):
+            if line.strip().startswith('LOTE'):
                 header['LOTE'] = line.split(':')[1].strip() or ''
                 continue
                 
