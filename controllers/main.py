@@ -64,9 +64,9 @@ class FileDownloadController(http.Controller):
     def download_file_txt_to_pdf(self, record_id, **kwargs):
         record = request.env['afr.supervisorio.ciclos'].browse(record_id)
         
-        msg_rodape = "Gerado pelo sistema FITADIGITAL"
+        msg_rodape = f"Ciclo cod.: {record.name} - Gerado pelo sistema FITADIGITAL"
         pagina = 1
-        rodape_x = 330
+        rodape_x = 130
         rodape_y = 10
         text_size = 8
         leading = 0.1

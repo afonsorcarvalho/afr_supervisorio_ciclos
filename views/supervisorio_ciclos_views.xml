@@ -88,10 +88,10 @@
                            
                              <group col="1">
                              <field name="file_path" groups="base.group_system" />    
-                               <field name="download_url" widget="url" 
+                               <field name="download_url" widget="Html" 
                    string="Baixe aqui" 
                    
-                   options="{'text': 'Baixe aqui'}"/> 
+                   options="{'text': 'Baixe aqui','label': 'PDF'}"/> 
                              </group>      
                             
                             <group col="2" >

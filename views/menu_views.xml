@@ -4,6 +4,7 @@
     <menuitem 
         id="menu_afr_supervisorio_ciclos"
         name="Supervisório"
+        web_icon="afr_supervisorio_ciclos,static/description/icon.png"
         sequence="10"/>
 
     <!-- Submenu Operações -->

@@ -69,15 +69,31 @@ class SupervisorioCiclos(models.Model):
         tracking=True,
         help='Caminho completo do arquivo de ciclo'
     )
-    download_url = fields.Char(string='URL de Download', compute='_compute_download_url')
+    #download_url = fields.Char(string='URL de Download', compute='_compute_pdf_link_html')
+    download_url  = fields.Html(string='URL de Download', compute='_compute_pdf_link_html')
+    
     
     @api.depends('file_path')
-    def _compute_download_url(self):
-        for record in self:
-            if record.file_path:
-                record.download_url = f'/web/content/download_file_txt_to_pdf/{record.id}'
+    def _compute_pdf_link_html(self):
+        for rec in self:
+            if rec.file_path:
+                rec.download_url = (
+                    f'<a href="/web/content/download_file_txt_to_pdf/{rec.id}" target="_blank">'
+                    f'<i class="fa fa-file-pdf-o" style="color:red"></i> PDF'
+                    '</a>&nbsp;&nbsp;'
+                    f'<a href="/web/content/download_file_txt/{rec.id}" target="_blank">'
+                    f'<i class="fa fa-file-text-o" style="color:red"></i> TXT'
+                    '</a>'
+                )
             else:
-                record.download_url = False
+                rec.download_url = ''
+    # @api.depends('file_path')
+    # def _compute_download_url(self):
+    #     for record in self:
+    #         if record.file_path:
+    #             record.download_url = f'/web/content/download_file_txt_to_pdf/{record.id}'
+    #         else:
+    #             record.download_url = False
 
     cycle_statistics_txt = fields.Text(
         string='Estatísticas do Ciclo',
