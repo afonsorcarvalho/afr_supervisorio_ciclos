@@ -402,7 +402,7 @@ class ReaderFitaDigitalSerconOr2011(ReaderFitaDigitalInterface):
 
             #Adiciona set-point
             #TODO: Verificar se o header['TEMPERATURA DA AGUA'] se está pegando o valor correto
-            ax1.axhline(y=header.get(header['TEMPERATURA DA AGUA'], 0), color='black', linestyle='--', label='Set-Point')
+            ax1.axhline(y=header.get(header['SET-POINT'], 0), color='black', linestyle='--', label='Set-Point')
             
             # Adiciona título
             plt.title(f'Curvas Paramétricas do Ciclo - {header.get("file_name", "Ciclo")}')
