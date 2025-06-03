@@ -321,10 +321,42 @@ class DataObjectFitaDigital:
         header = self.read_header_fita()
        
         body = self.read_body_fita()
+        
        
 
         return self.header_fita, self.body_fita
+    
+    def make_graph(self):
+        """
+        Gera um gráfico do ciclo de esterilização/termodesinfecção.
 
+        Este método é responsável por criar uma representação visual dos dados
+        coletados durante o ciclo, utilizando os dados do cabeçalho e do corpo
+        da fita digital.
+
+        Returns:
+            object: Um objeto gráfico contendo a visualização do ciclo,
+                   que pode incluir:
+                   - Curvas de temperatura
+                   - Curvas de pressão
+                   - Marcadores de fases do ciclo
+                   - Legenda e informações do ciclo
+
+        Exemplo:
+            >>> data_object = DataObjectFitaDigital()
+            >>> grafico = data_object.make_graph()
+            >>> # O gráfico pode ser exibido ou salvo em um arquivo
+        """
+        if not self.header_fita or not self.body_fita:
+            self.read_all_fita()
+       
+       
+        
+        # Chama o método make_graph do reader_fita passando os dados
+        # do cabeçalho e do corpo da fita digital
+        graph = self.reader_fita.make_graph(self.header_fita, self.body_fita)
+        return graph
+    
     def _converter_horario_para_minutos(self, horario):
         """
         Converte um horário no formato HH:MM:SS para minutos totais.
@@ -489,7 +521,14 @@ class DataObjectFitaDigital:
                     updated_datetimes[i] += timedelta(days=1)
 
             return updated_datetimes
-
+    def compute_statistics(self, phases=None):
+        """
+        Calcula as estatísticas do ciclo (máximo, mínimo, média e moda) para cada variável.
+        """
+        if not self.body_fita or 'data' not in self.body_fita:
+            self.read_all_fita()
+        statistics, error_msg = self.reader_fita.compute_statistics(phases,self.header_fita,self.body_fita)
+        return statistics
     def calcular_estatisticas_ciclo(self, fases=None):
         """
         Calcula as estatísticas do ciclo (máximo, mínimo, média e moda) para cada variável.

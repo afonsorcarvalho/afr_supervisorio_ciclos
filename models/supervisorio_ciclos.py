@@ -533,85 +533,18 @@ class SupervisorioCiclos(models.Model):
     
     @api.depends('cycle_txt')
     def _compute_cycle_statistics_txt(self):
-        """
-        Calcula e formata as estatísticas do ciclo em texto.
-        Gera uma tabela formatada com as estatísticas de cada fase do ciclo.
-
-        """
         for record in self:
             do = self._get_dataobject(record.equipment_id,record.file_path)
-            if record.cycle_txt:
-                try:
-                    # Registra o leitor de fita e lê os dados
-                    #reader_class = self._carregar_classe_leitor(record.equipment_id)
-                    # do.register_reader_fita(reader_class(record.file_path), 
-                    #                            size_header=record.equipment_id.cycle_type_id.header_lines)    
-                    res = do.read_all_fita()
-                    print(f"res: {res}")
-                    fases_fita_digital = record.cycle_type_id.fases_fita_digital.split(',')
-                    fases_fita_digital = [fase.strip() for fase in fases_fita_digital]
-                    _logger.debug(f"fases_fita_digital: {fases_fita_digital}")
-                    estatisticas, _ = do.calcular_estatisticas_ciclo(fases=fases_fita_digital)
-                        
-                except Exception as e:
-                    _logger.error(f"Erro ao calcular estatísticas: {str(e)}")
-                    estatisticas = False
+            if not record.cycle_txt:
+                record.cycle_statistics_txt = False
+                continue
+            if record.cycle_type_id.fases_fita_digital:
+                fases = record.cycle_type_id.fases_fita_digital.split(',')
+                statistics = do.compute_statistics(fases)
+                record.cycle_statistics_txt = statistics
             else:
-                estatisticas = False
-
-            # Inicializa o texto de estatísticas
-            record.cycle_statistics_txt = f"ESTATÍSTICAS DO CICLO ({record.name})\n\n"
-            
-            if estatisticas:
-                # Para cada fase do ciclo
-                for fase, dados in estatisticas.items():
-                    
-                    try:
-                        # Adiciona cabeçalho da fase
-                        record.cycle_statistics_txt += f"\n### {fase} ###\n"
-                        record.cycle_statistics_txt += f"Duração: {dados['Duration']}\n\n"
-
-                        # Calcula larguras das colunas
-                        max_param_length = max(len(param) for param in dados.keys() if param != 'Duration')
-                        col_widths = {
-                            'parametro': max_param_length + 2,
-                            'valores': 12
-                        }
-                    
-                    except Exception as e:
-                        _logger.error(f"Erro de leitura de dados: {str(e)}")
-                        record.cycle_statistics_txt += f"Erro de leitura de dados: {str(e)}\n"
-                        record.cycle_statistics_txt += f"header columns: {dados.keys()}\n"
-                        continue
-                    # Cria cabeçalho da tabela
-                    header = "{:<{}} {:<{}} {:<{}} {:<{}} {:<{}}\n".format(
-                        "Parâmetro", col_widths['parametro'],
-                        "Máxima", col_widths['valores'],
-                        "Mínima", col_widths['valores'],
-                        "Média", col_widths['valores'],
-                        "Moda", col_widths['valores']
-                    )
-                    
-                    # Adiciona linha separadora
-                    total_width = col_widths['parametro'] + (col_widths['valores'] * 4) + 4
-                    record.cycle_statistics_txt += header
-                    record.cycle_statistics_txt += "-" * total_width + "\n"
-                    
-                    # Adiciona estatísticas de cada parâmetro
-                    for param, valores in dados.items():
-                        if param != 'Duration':
-                            linha = "{:<{}} {:<{}.2f} {:<{}.2f} {:<{}.2f} {:<{}.2f}\n".format(
-                                param, col_widths['parametro'],
-                                valores['max'], col_widths['valores'],
-                                valores['min'], col_widths['valores'],
-                                valores['media'], col_widths['valores'],
-                                valores['moda'], col_widths['valores']
-                            )
-                            record.cycle_statistics_txt += linha
-                    
-                    record.cycle_statistics_txt += "\n"
-            else:
-                record.cycle_statistics_txt += "Não foi possível calcular as estatísticas do ciclo."
+                record.cycle_statistics_txt = do.compute_statistics()
+   
 
     def compute_cycle_graph(self):
         
@@ -640,114 +573,9 @@ class SupervisorioCiclos(models.Model):
         """
         Processa o gráfico do ciclo a partir dos dados da fita digital.
         """
-        try:
-            import matplotlib.pyplot as plt
-            import matplotlib.dates as mdates
-            import io
-            import base64
-            
-            # Cria uma figura e dois eixos com escalas diferentes
-            fig, ax1 = plt.subplots(figsize=(16, 9))
-            ax2 = ax1.twinx()  # Cria um segundo eixo Y compartilhando o mesmo eixo X
-            
-            # Registra o leitor de fita e lê os dados
-            reader_class = self._carregar_classe_leitor(record.equipment_id)
-            do.register_reader_fita(reader_class(record.file_path))
-            
-            header, body = do.read_all_fita()
-            
-            # Extrai os dados do body
-            times = []
-            temperatures = []
-            pressures = []
-            
-            for row in body.get('data', []):
-                if len(row) >= 3:
-                    # Usa o datetime diretamente do objeto
-                    times.append(row[0])
-                    pressures.append(float(row[1]))  # PCI(Bar)
-                    temperatures.append(float(row[2]))  # TCI(Celsius)
-            
-            # Configura o formato do eixo X para mostrar HH:mm:ss
-            ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
-            ax1.xaxis.set_major_locator(plt.MaxNLocator(50)) # Define 50 valores no eixo X
-            ax1.yaxis.set_major_locator(plt.MaxNLocator(20)) # Define 20 valores no eixo Y da temperatura
-            ax2.yaxis.set_major_locator(plt.MaxNLocator(20)) # Define 20 valores no eixo Y da pressão
-            
-            # Rotaciona os rótulos do eixo X em 45 graus e ajusta o alinhamento
-            plt.setp(ax1.get_xticklabels(), rotation=90, ha='right', fontsize=6)
-            
-            # Plota temperatura no eixo Y esquerdo
-            color1 = '#1f77b4'  # Azul
-            ax1.plot(times, temperatures, color=color1, label='Temperatura (°C)')
-            ax1.set_xlabel('Tempo (HH:mm:ss)')
-            ax1.set_ylabel('Temperatura (°C)', color=color1)
-            ax1.tick_params(axis='y', labelcolor=color1)
-            ax1.set_ylim(0, 100)  # Define escala de temperatura de 0 a 100°C
-            
-            # Plota pressão no eixo Y direito
-            color2 = '#d62728'  # Vermelho
-            ax2.plot(times, pressures, color=color2, label='Pressão (bar)')
-            ax2.set_ylabel('Pressão (bar)', color=color2)
-            ax2.tick_params(axis='y', labelcolor=color2)
-            ax2.set_ylim(-1, 0)  # Define escala de pressão de -1 a 0 bar
-            
-            # Adiciona as fases como linhas verticais
-            fases_permitidas = ['LEAK-TEST','FALHA LEAK-TEST','ACONDICIONAMENTO','ESTERILIZACAO','LAVAGEM','AERACAO','CICLO ABORTADO','CICLO FINALIZADO']
-            fases_validas = []
-            
-            # Filtra apenas as fases permitidas
-            for fase in body.get('fase', []):
-                if len(fase) >= 2 and fase[1] in fases_permitidas:
-                    fases_validas.append(fase)
-            
-            # Adiciona as fases e calcula o tempo entre elas
-            for i, fase in enumerate(fases_validas):
-                tempo_fase = fase[0].strftime('%H:%M:%S')
-                ax1.axvline(x=fase[0], color='g', linestyle='--', alpha=0.5)
-                
-                # Calcula o tempo até a próxima fase
-                if i < len(fases_validas) - 1:
-                    tempo_entre_fases = fases_validas[i+1][0] - fase[0]
-                    minutos = tempo_entre_fases.total_seconds() / 60
-                    texto_fase = f"{tempo_fase} - {fase[1]}\n{int(minutos)} min"
-                else:
-                    texto_fase = f"{tempo_fase} - {fase[1]}"
-                    
-                ax1.text(fase[0], ax1.get_ylim()[0] + 2, 
-                        texto_fase,
-                        rotation=90,
-                        verticalalignment='bottom',
-                        fontsize=8)
-                            
-            # Adiciona grade
-            ax1.grid(True, alpha=0.3)
-            
-            # Adiciona título
-            plt.title(f'Curvas Paramétricas do Ciclo {record.name}')
-            
-            # Adiciona legendas
-            lines1, labels1 = ax1.get_legend_handles_labels()
-            lines2, labels2 = ax2.get_legend_handles_labels()
-            ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
-            
-            # Ajusta o layout para evitar sobreposição
-            plt.tight_layout()
-            
-            # Salva o gráfico em um buffer de memória
-            buf = io.BytesIO()
-            plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-            buf.seek(0)
-            
-            # Converte para base64
-            record.cycle_graph = base64.b64encode(buf.getvalue())
-            
-            # Fecha a figura para liberar memória
-            plt.close()
-                
-        except Exception as e:
-            _logger.error(f"Erro ao gerar gráfico: {str(e)}")
-            record.cycle_graph = False
+        cycle_graph = do.make_graph()
+        record.cycle_graph = cycle_graph
+        
 
     def get_view(self, view_id=None, view_type='form', **options):
         """

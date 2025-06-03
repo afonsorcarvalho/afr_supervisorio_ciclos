@@ -244,7 +244,8 @@ class ReaderFitaDigitalSerconTds(ReaderFitaDigitalInterface):
         try:
             if 'fase' not in self.body:
                 raise KeyError("Chave 'fase' não encontrada no dicionário body")
-                
+            self.state_finalized_keys = ["FINAL  DE CICLO"]
+            self.state_aborted_keys = ["CICLO ABORTADO"]       
             # Verifica se é uma lista de fases
             if isinstance(self.body['fase'], list):
                 # Procura por fases de conclusão ou cancelamento
