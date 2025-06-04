@@ -30,6 +30,7 @@
         'web.assets_backend': [
             'afr_supervisorio_ciclos/static/src/js/ace_editor.js',
             'afr_supervisorio_ciclos/static/src/xml/ace_editor.xml',
+            'afr_supervisorio_ciclos/static/src/css/style.css',
         ],
     },
     'installable': True,

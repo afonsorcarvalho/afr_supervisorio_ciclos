@@ -141,104 +141,57 @@ class ReaderFitaDigitalSerconOr2011(ReaderFitaDigitalInterface):
         Returns:
             dict: Dicionário contendo as informações do cabeçalho
         """
-        if self.lines_file == []:
-            self.read_file()
-        # Dicionário para armazenar os valores encontrados
-        file_content = self.lines_file[:self.size_header]
-       
-        
         # Obtém informações do arquivo
-        header_values = {
-            'file_name': os.path.splitext(os.path.basename(self.file_name))[0],
-            'create_date': datetime.fromtimestamp(os.path.getctime(self.file_name)).strftime('%d-%m-%Y %H:%M:%S'),
-            'change_date': datetime.fromtimestamp(os.path.getmtime(self.file_name)).strftime('%d-%m-%Y %H:%M:%S')
-        }
-        header = header_values
-        for line in file_content:
+        header_values = self.read_files_information()
+      
+        # Obtém o conteúdo do arquivo
+        file_content = self.read_header_file_content()
+        
+        
+        try:
+            header = header_values
+            for line in file_content:
 
-            # procurando data e hora de inicia do ciclo
-            value = line.split()
-           
-            if len(value) == 2:
-                if value[0].startswith('DATA:'):
-                    
-                    date = value[0].split(':')[1].split('/')
-                 
-                    header['Data:'] = f"{date[0]}-{date[1]}-{date[2]}"
-                    hora = value[1].split(':')
-                    header['Hora:'] = f"{hora[1]}:{hora[2]}:{hora[3]}"
-                    
+                # procurando data e hora de inicia do ciclo
+                value = line.split()
             
-            if line.strip().startswith('LOTE....'):
-                header['LOTE'] = line.split(':')[1].strip() or ''
+                if len(value) == 2:
+                    if value[0].startswith('DATA:'):
+                        
+                        date = value[0].split(':')[1].split('/')
+                    
+                        header['Data:'] = f"{date[0]}-{date[1]}-{date[2]}"
+                        hora = value[1].split(':')
+                        header['Hora:'] = f"{hora[1]}:{hora[2]}:{hora[3]}"
+                        
                 
-            if line.strip().startswith('CICLO:'):
-                header['CICLO'] = line.split(':')[1].strip().replace('\n', '') or ''
-            
-            if line.strip().startswith('SET-POINT'):
-                setpoint = line.split(':')[1].strip().replace('\n', '') or ''
-                if setpoint != '':
-                    setpoint = setpoint.split(' ')[0].strip()
-                    setpoint = float(setpoint.replace(',', '.'))
-                    header['SET-POINT'] = setpoint
-                break
-       
+                if line.strip().startswith('LOTE....'):
+                    header['LOTE'] = line.split(':')[1].strip() or ''
+                    
+                if line.strip().startswith('CICLO:'):
+                    header['CICLO'] = line.split(':')[1].strip().replace('\n', '') or ''
+                
+                if line.strip().startswith('SET-POINT'):
+                    setpoint = line.split(':')[1].strip().replace('\n', '') or ''
+                    if setpoint != '':
+                        setpoint = setpoint.split(' ')[0].strip()
+                        setpoint = float(setpoint.replace(',', '.'))
+                        header['SET-POINT'] = setpoint
+                    break
+        
 
-        
-        
+            if 'Data:' not in header or 'Hora:' not in header:
+                header['Data:'] = header_values['create_date'].strftime('%d-%m-%Y')
+                header['Hora:'] = header_values['create_date'].strftime('%H:%M:%S')
+                _logger.warning(f"Data e Hora não encontradas no arquivo {self.file_name}, usando data e hora do arquivo")
+        except Exception as e:
+            _logger.error(f"Erro ao ler cabeçalho: {str(e)}")
+
         _logger.debug(f"header: {header}")
         header[self.header_fields.date_key] = datetime.strptime(header[self.header_fields.date_key], '%d-%m-%Y')
         
         return header
 
-    def read_body(self):
-        """
-        Lê e processa o corpo do arquivo de fita digital.
-
-        Returns:
-            dict: Dicionário contendo os dados processados do arquivo, incluindo:
-                - header: Colunas do cabeçalho
-                - cabecalho: Informações gerais do cabeçalho
-                - data: Lista de medições realizadas durante o ciclo
-                - fase: Dicionário com horários e nomes das fases do ciclo
-        """
-        lines_body = self.read_body_lines_raw()
-        
-        body_dict = {}
-        body_dict['data'] = []
-        body_dict['fase'] = []
-       
-        # Processa o cabeçalho
-        body_dict = self._process_header_line(lines_body, body_dict)
-        
-        for line in lines_body[1:]:
-
-            line = line.strip()
-            
-            # Verifica se é uma linha de fase
-            is_phase, body_dict = self._process_phase_line(line, body_dict)
-            
-            if is_phase:
-                continue
-                    
-            # Processa linha de dados
-            body_dict = self._process_body_line(line, body_dict)
-            self.body = body_dict
-        return self.body
-
-    def read_body_lines_raw(self):
-        """
-        Lê as linhas brutas do corpo do arquivo.
-
-        Returns:
-            list: Lista contendo as linhas do corpo do arquivo
-        """
-        if self.lines_file == []:
-            self.read_file()
-
-        self.lines_body_raw = self.lines_file[self.size_header:]
-
-        return self.lines_body_raw
 
     def get_state(self):
         """
@@ -291,7 +244,18 @@ class ReaderFitaDigitalSerconOr2011(ReaderFitaDigitalInterface):
             _logger.error(f"Erro inesperado ao obter estado: {str(e)}")
             return 'erro'
         
-     
+    def _get_fases_permitidas(self):
+        """
+        Obtém as fases permitidas para o ciclo.
+        """
+        return  [
+                'INICIO DO AQUECIMENTO',
+                
+                'INICIO DA HOMOGENIZACAO', 
+                'INICIO DA ESTERILIZACAO',
+                'TERMINO DA ESTERILIZACAO',
+          
+            ]
     def make_graph(self, header, body):
         """
         Gera um gráfico do ciclo de termodesinfecção.
@@ -356,18 +320,7 @@ class ReaderFitaDigitalSerconOr2011(ReaderFitaDigitalInterface):
             #ax2.set_ylim(0, 2.5)  # Escala de pressão
             
             # Adiciona as fases como linhas verticais
-            fases_permitidas = [
-                'INICIO DO AQUECIMENTO',
-                
-                'INICIO DA HOMOGENIZACAO', 
-                'INICIO DA ESTERILIZACAO',
-                'TERMINO DA ESTERILIZACAO',
-                # 'INICIO DA DESCOMPRESSAO',
-                # 'TERMINO DA DESCOMPRESSAO',
-                # 'INICIO DA SECAGEM',
-                # 'TERMINO DA SECAGEM',
-                # 'FINAL DO CICLO'
-            ]
+            fases_permitidas = self._get_fases_permitidas()
             
             fases_validas = []
             for fase in body.get('fase', []):
@@ -582,7 +535,9 @@ class ReaderFitaDigitalSerconOr2011(ReaderFitaDigitalInterface):
                 
             dados = body['data']
             if not dados:
-                raise ValueError("Não há dados de medição disponíveis")
+                #raise ValueError("Não há dados de medição disponíveis")
+                estatisticas= {'error': 'Não há dados de medição disponíveis'}
+                return estatisticas
 
             # Se fases foram especificadas, filtra os dados entre elas
             if fase_inicial and fase_final:

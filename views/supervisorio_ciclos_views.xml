@@ -76,7 +76,7 @@
                             
                             <field name="cycle_type_id"  groups="base.group_system"/>
                             <field name="cycle_features_id"  groups="base.group_system"/>
-                            <field name="operator_id" widget="many2one_avatar_employee" />
+                            <field name="operator_id" widget="many2one_avatar_employee"  groups="base.group_system" />
                             
                             <field name="company_id" groups="base.group_system" />
                         </group>
@@ -210,8 +210,8 @@
                 />
                 <field name="str_is_overdue" optional="show"/>
             </tree>
-           
         </field>
+           
     </record>
 
     <!-- Search View -->
@@ -250,6 +250,13 @@
                     <filter string="Data Início" name="start_date" context="{'group_by':'start_date:day'}"/>
                 </group>
             </search>
+             <searchpanel>
+               
+                <field name="equipment_id" string="Equipamento" enable_counters="1"/>
+                <field name="equipment_category_id" string="Categoria" enable_counters="1"/>
+                <field name="state" string="Status" enable_counters="1"/>
+               
+            </searchpanel>
              <!-- <searchpanel>
               
                
