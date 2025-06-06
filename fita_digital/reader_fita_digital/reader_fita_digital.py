@@ -379,7 +379,7 @@ class ReaderFitaDigitalInterface(ABC):
         Formata o dicionário de estatísticas do ciclo em colunas alinhadas.
         """
         print(f"statistics: {statistics}")
-        linhas = [f'### Estatísticas do Ciclo {self.file_name.replace(".txt", "")}']
+        linhas = [f'### Estatísticas do Ciclo {self.file_name.split("/")[-1].replace(".txt", "")}']
         for fase, dados in statistics.items():
             minutos, segundos = dados['Duration'].split(':')
             linhas.append(f"## {fase.upper()} - {minutos} min {segundos} seg\n")
