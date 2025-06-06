@@ -43,7 +43,7 @@ class SupervisorioCiclos(models.Model):
    
     # Campos de data/hora
     start_date = fields.Datetime(string='Data Início', default=fields.Datetime.now, tracking=True)
-    end_date = fields.Datetime(string='Data Fim', tracking=True)
+    end_date = fields.Datetime(string='Data Fim')
     duration = fields.Float(string='Duração (h)', compute='_compute_duration', store=True)
     
     # Status do ciclo

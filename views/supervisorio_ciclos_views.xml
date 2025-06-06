@@ -195,6 +195,7 @@
                 />
                 <field name="name" optional="hide"/>
                 <field name="batch_number"/>
+                <field name="cycle_features_id" string="Ciclo Selecionado"/>
                 <field name="equipment_id"/>
                 <field name="equipment_nickname"/>
                 <field name="equipment_category_id" optional="hide"/>
@@ -252,9 +253,12 @@
             </search>
              <searchpanel>
                
-                <field name="equipment_id" string="Equipamento" enable_counters="1"/>
-                <field name="equipment_category_id" string="Categoria" enable_counters="1"/>
-                <field name="state" string="Status" enable_counters="1"/>
+                <field name="equipment_id" string="Equipamento" enable_counters="1" select="multi"/>
+                <field name="equipment_category_id" string="Categoria" enable_counters="1" select="multi"/>
+                <field name="cycle_features_id" string="Ciclo Selecionado" enable_counters="1" select="multi"/>
+                <field name="state" string="Status" enable_counters="1" select="multi"/>
+                
+                
                
             </searchpanel>
              <!-- <searchpanel>
