@@ -18,13 +18,14 @@
         "security/ir.model.access.csv",
         "security/supervisorio_groups.xml",
         "data/supervisorio_manager_data.xml",
+        "views/res_config_settings_views.xml",
+        "views/authenticity_check_views.xml",
         "views/cycle_features_views.xml",
         "views/cycle_type_views.xml",
         "views/equipments_views.xml",
         "views/menu_views.xml",
         "views/supervisorio_ciclos_views.xml",
         "reports/report_txt_to_pdf.xml",
-        
     ],
     'assets': {
         'web.assets_backend': [
