@@ -7,25 +7,28 @@
         Módulo para gerenciamento de ciclos.
         Permite visualizar e analisar dados de ciclos.
     """,
-    'author': 'Engenapp',
-    'website': 'https://www.engenapp.com.br',
+    'author': 'AFR Sistemas',
+    'website': 'https://www.afrsistemas.com.br',
     'depends': [
         'base',
         'engc_os',
         'mail',
+        'portal',
+        'website'
     ],
-    "data": [
-        "security/ir.model.access.csv",
-        "security/supervisorio_groups.xml",
-        "data/supervisorio_manager_data.xml",
-        "views/res_config_settings_views.xml",
-        "views/authenticity_check_views.xml",
-        "views/cycle_features_views.xml",
-        "views/cycle_type_views.xml",
-        "views/equipments_views.xml",
-        "views/menu_views.xml",
-        "views/supervisorio_ciclos_views.xml",
-        "reports/report_txt_to_pdf.xml",
+    'data': [
+        'security/supervisorio_groups.xml',
+        'security/ir.model.access.csv',
+        'data/supervisorio_manager_data.xml',
+        'views/res_config_settings_views.xml',
+        'views/authenticity_check_views.xml',
+        'views/portal_templates.xml',
+        'views/cycle_features_views.xml',
+        'views/cycle_type_views.xml',
+        'views/equipments_views.xml',
+        'views/menu_views.xml',
+        'views/supervisorio_ciclos_views.xml',
+        'reports/report_txt_to_pdf.xml',
     ],
     'assets': {
         'web.assets_backend': [
@@ -35,7 +38,14 @@
         ],
     },
     'installable': True,
-    'application': False,
+    'application': True,
     'auto_install': False,
     'license': 'LGPL-3',
+    'external_dependencies': {
+        'python': [],
+        'bin': []
+    },
+    'data_files': [
+        ('tools', ['tools/verify_sign.sh'])
+    ]
 }
