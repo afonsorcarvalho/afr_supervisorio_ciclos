@@ -356,13 +356,14 @@ class SupervisorioCiclos(models.Model):
             return classe_leitor
 
     def update_cycle(self,arquivo,equipment_id):
-        
+        header = None
+        body = None
         try:
             do = self._get_dataobject(equipment_id=equipment_id,file_path=arquivo['path'] + '/' + arquivo['name'])
             header, body = do.read_all_fita()
         except Exception as e:
             _logger.error(f"Erro ao atualizar ciclo: {str(e)}")
-            raise UserError(f"Erro ao atualizar ciclos: {str(e)}")
+            
         
         #verificando se header e body estão definidos
         if not header or not body:

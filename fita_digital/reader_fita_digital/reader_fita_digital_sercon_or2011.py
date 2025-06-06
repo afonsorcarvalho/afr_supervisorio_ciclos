@@ -3,6 +3,7 @@ import re
 from datetime import datetime,timedelta
 import os
 import logging
+import sys
 _logger = logging.getLogger(__name__)
 
 
@@ -188,7 +189,10 @@ class ReaderFitaDigitalSerconOr2011(ReaderFitaDigitalInterface):
             _logger.error(f"Erro ao ler cabeçalho: {str(e)}")
 
         _logger.debug(f"header: {header}")
-        header[self.header_fields.date_key] = datetime.strptime(header[self.header_fields.date_key], '%d-%m-%Y')
+        try:
+            header[self.header_fields.date_key] = datetime.strptime(header[self.header_fields.date_key], '%d-%m-%Y')
+        except Exception as e:
+            _logger.error(f"Erro ao converter data: {str(e)} no metodo {sys._getframe().f_code.co_name}")
         
         return header
 
