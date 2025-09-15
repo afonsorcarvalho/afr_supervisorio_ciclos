@@ -177,6 +177,7 @@
     <record id="view_afr_supervisorio_ciclos_tree" model="ir.ui.view">
         <field name="name">afr.supervisorio.ciclos.tree</field>
         <field name="model">afr.supervisorio.ciclos</field>
+       
         <field name="arch" type="xml">
             <!-- <tree string="Ciclos" decoration-info="state=='aguardando'"
                   decoration-success="state=='concluido'"
@@ -217,7 +218,7 @@
     </record>
 
     <!-- Search View -->
-    <!-- <record id="view_afr_supervisorio_ciclos_search" model="ir.ui.view">
+    <record id="view_afr_supervisorio_ciclos_search" model="ir.ui.view">
         <field name="name">afr.supervisorio.ciclos.search</field>
         <field name="model">afr.supervisorio.ciclos</field>
         <field name="arch" type="xml">
@@ -248,14 +249,14 @@
                     <filter string="Categoria de Equipamento" name="equipment_category" context="{'group_by':'equipment_category_id'}"/>
                     <filter string="Tipo de Ciclo" name="cycle_type" context="{'group_by':'cycle_type_id'}"/>
                     <filter string="Status" name="state" context="{'group_by':'state'}"/>
-                    <filter string="Operador" name="operator" context="{'group_by':'operator_id'}" />
-                    <filter string="Data Início" name="start_date" context="{'group_by':'start_date:day'}"/>
+                    <!-- <filter string="Operador" name="operator" context="{'group_by':'operator_id'}" /> -->
+                    <!-- <filter string="Data Início" name="start_date" context="{'group_by':'start_date:day'}"/> -->
                 </group>
             </search>
              <searchpanel>
                
                 <field name="equipment_id" string="Equipamento" enable_counters="1" select="multi"/>
-                <field name="equipment_category_id" string="Categoria" enable_counters="1" select="multi"/>
+                <!-- <field name="equipment_category_id" string="Categoria" enable_counters="1" select="multi"/> -->
                 <field name="cycle_features_id" string="Ciclo Selecionado" enable_counters="1" select="multi"/>
                 <field name="state" string="Status" enable_counters="1" select="multi"/>
                 
@@ -264,7 +265,7 @@
             </searchpanel>
             
         </field>
-    </record> -->
+    </record>
 
     <!-- Calendar View -->
     <record id="view_afr_supervisorio_ciclos_calendar" model="ir.ui.view">
@@ -296,12 +297,12 @@
     </record>
 
     <!-- Action -->
-    <record id="action_afr_supervisorio_ciclos_ciclos" model="ir.actions.act_window">
+    <!-- <record id="action_afr_supervisorio_ciclos_ciclos" model="ir.actions.act_window">
         <field name="name">Ciclos de ETO</field>
         <field name="res_model">afr.supervisorio.ciclos</field>
         <field name="view_mode">tree,form,calendar,pivot</field>
-        <!-- <field name="search_view_id" ref="view_afr_supervisorio_ciclos_search"/> -->
-        <field name="domain">[('cycle_type_id.code', '=', 'VAPOR_PREVACUO')]</field>
+        <field name="search_view_id" ref="view_afr_supervisorio_ciclos_search"/>
+       
         <field name="help" type="html">
             <p class="o_view_nocontent_empty_folder">
                 Não há ciclos cadastrados.
@@ -310,7 +311,7 @@
                 Os ciclos serão registrados automaticamente pelo sistema.
             </p>
         </field>
-    </record>
+    </record> -->
 
 
     <!-- Form View Lavadora Ultrassônica -->
