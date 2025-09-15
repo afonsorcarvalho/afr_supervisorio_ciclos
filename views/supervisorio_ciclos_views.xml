@@ -217,7 +217,7 @@
     </record>
 
     <!-- Search View -->
-    <record id="view_afr_supervisorio_ciclos_search" model="ir.ui.view">
+    <!-- <record id="view_afr_supervisorio_ciclos_search" model="ir.ui.view">
         <field name="name">afr.supervisorio.ciclos.search</field>
         <field name="model">afr.supervisorio.ciclos</field>
         <field name="arch" type="xml">
@@ -225,13 +225,13 @@
                 <field name="name"/>
                 <field name="equipment_id"/>
                 <field name="equipment_nickname"/>
-                <!-- <field name="cycle_type_id"/> -->
+                <field name="cycle_type_id"/>
                 <field name="cycle_features_id"/>
                 <field name="operator_id"/>
                 <field name="batch_number" string="Lote"/>
                 <separator/>
                 <filter string="Meus Ciclos" name="my_cycles" domain="[('operator_id', '=', uid)]"/>
-                <!-- <filter string="Atrasados" name="overdue" domain="[('is_overdue', '=', True)]"/> -->
+               
                 <separator/>
                 <filter string="Em Andamento" name="ongoing" domain="[('state','=','em_andamento')]"/>
                 <filter string="Aguardando" name="waiting" domain="[('state','=','aguardando')]"/>
@@ -246,7 +246,7 @@
                     <filter string="Equipamento" name="equipment" context="{'group_by':'equipment_id'}"/>
                     <filter string="Apelido" name="equipment_nickname" context="{'group_by':'equipment_nickname'}"/>
                     <filter string="Categoria de Equipamento" name="equipment_category" context="{'group_by':'equipment_category_id'}"/>
-                    <!-- <filter string="Tipo de Ciclo" name="cycle_type" context="{'group_by':'cycle_type_id'}"/> -->
+                    <filter string="Tipo de Ciclo" name="cycle_type" context="{'group_by':'cycle_type_id'}"/>
                     <filter string="Status" name="state" context="{'group_by':'state'}"/>
                     <filter string="Operador" name="operator" context="{'group_by':'operator_id'}" />
                     <filter string="Data Início" name="start_date" context="{'group_by':'start_date:day'}"/>
@@ -262,16 +262,9 @@
                 
                
             </searchpanel>
-             <!-- <searchpanel>
-              
-               
-                <field name="equipment_category_id" string="Categoria" enable_counters="1"/>
-           
-              
-               
-            </searchpanel> -->
+            
         </field>
-    </record>
+    </record> -->
 
     <!-- Calendar View -->
     <record id="view_afr_supervisorio_ciclos_calendar" model="ir.ui.view">
