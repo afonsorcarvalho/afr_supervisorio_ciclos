@@ -300,7 +300,7 @@
         <field name="name">Ciclos de ETO</field>
         <field name="res_model">afr.supervisorio.ciclos</field>
         <field name="view_mode">tree,form,calendar,pivot</field>
-        <field name="search_view_id" ref="view_afr_supervisorio_ciclos_search"/>
+        <!-- <field name="search_view_id" ref="view_afr_supervisorio_ciclos_search"/> -->
         <field name="domain">[('cycle_type_id.code', '=', 'VAPOR_PREVACUO')]</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_empty_folder">
