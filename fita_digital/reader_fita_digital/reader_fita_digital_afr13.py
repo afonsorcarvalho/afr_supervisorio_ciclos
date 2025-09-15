@@ -312,6 +312,7 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
                 'LAVAGEM',
                 'AERACAO',
                 'HIPERVENTILACAO',
+                'CICLO ABORTADO',
                 'CICLO FINALIZADO'
                
                
