@@ -311,6 +311,7 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
                 'ESTERILIZANDO',
                 'LAVAGEM',
                 'AERACAO',
+                'HIPERVENTILACAO',
                 'CICLO FINALIZADO'
                
                
