@@ -345,7 +345,17 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
                         rotation=90,
                         verticalalignment='bottom',
                         fontsize=8)
-                            
+           
+            
+            # if fases:
+            #     esterilizando = fases.get('ESTERILIZANDO')
+            #     if esterilizando:
+            #         texto_fase = f"{esterilizando[0].strftime('%H:%M:%S')}"
+            #         ax1.text(esterilizando[0]+timedelta(seconds=15), ax1.get_ylim()[0] + 2,
+            #                 texto_fase,
+            #                 verticalalignment='bottom',
+            #                 fontsize=8)
+           
             # Adiciona grade
             ax1.grid(True, alpha=0.3)
 

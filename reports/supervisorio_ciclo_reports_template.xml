@@ -51,7 +51,8 @@
                             
 
                         </div>
-                        <div class="row">
+                        
+                        <!-- <div class="row">
                             <div class="col-2">
                                 <strong>Tipo de Ciclo: </strong>
                             </div>
@@ -64,7 +65,7 @@
                             <div class="col-4">
                                 <span t-field="o.operator_id" />
                             </div>
-                        </div>
+                        </div> -->
                         <div class="row">
                             <div class="col-2">
                                 <strong>Status: </strong>
@@ -72,17 +73,16 @@
                             <div class="col-4">
                                 <span t-field="o.state" />
                             </div>
-                            <div class="col-2">
+                            <!-- <div class="col-2">
                                 <strong>Empresa: </strong>
                             </div>
                             <div class="col-4">
                                 <span t-field="o.company_id" />
-                            </div>
+                            </div> -->
                         </div>
-                        
                         <div class="row mt-3">
                             <div class="col-12">
-                                <h5>Informações do Ciclo</h5>
+                                <!-- <h5>Informações do Ciclo</h5>
                                 <div class="row">
                                     <div class="col-6">
                                         <strong>Duração Prevista: </strong>
@@ -92,15 +92,16 @@
                                         <strong>Atrasado: </strong>
                                         <span t-field="o.str_is_overdue" />
                                     </div>
-                                </div>
+                                </div> -->
                                 <div class="row mt-2">
-                                    <div class="col-12">
+                                    <div class="col-12" t-if="o.notes">
                                         <strong>Observações: </strong>
                                         <div t-field="o.notes" />
                                     </div>
                                 </div>
                             </div>
                         </div>
+                       
                         <div class="row mt-3 mb-1">
                            <div class="col-12 text-center"  >
                             <h5 class="titulo_grafico">Gráfico do Ciclo</h5>
@@ -114,9 +115,9 @@
                         </div>
                         <div class="row mt-5">
                             <div class="col-6  text-center" >
-                                ________________________________________<br/>
-                                <span t-field="o.operator_id" /><br/>
-                                Operador
+                                <!-- ________________________________________<br/>
+                                 <span t-field="o.operator_id" /><br/> 
+                                Operador -->
                             </div>
                             <div class="col-6  text-center">
                                 ________________________________________<br/>

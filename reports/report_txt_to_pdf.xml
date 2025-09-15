@@ -43,7 +43,7 @@
     </template>
 
     <!-- Ação do Relatório -->
-    <record id="action_report_txt_to_pdf" model="ir.actions.report">
+    <!-- <record id="action_report_txt_to_pdf" model="ir.actions.report">
         <field name="name">Exportar TXT como PDF</field>
         <field name="model">afr.supervisorio.ciclos</field>
         <field name="report_type">qweb-pdf</field>
@@ -52,5 +52,5 @@
         <field name="print_report_name">'Ciclo - %s' % object.name</field>
         <field name="binding_model_id" ref="model_afr_supervisorio_ciclos"/>
         <field name="binding_type">report</field>
-    </record>
+    </record> -->
 </odoo> 
