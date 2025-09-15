@@ -279,7 +279,7 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
             ax1.set_ylim(0, 100)      # Temperatura (°C) e Umidade (%) de 0 a 100
             ax2.set_ylim(-1, 0.100)  # Pressão (bar) de -0.600 a 0.100
             # Rotaciona os rótulos do eixo X
-            plt.setp(ax1.get_xticklabels(), rotation=90, ha='right', fontsize=6)
+            plt.setp(ax1.get_xticklabels(), rotation=90, ha='right', fontsize=10)
             
             # Plota temperatura no eixo Y esquerdo
             color1 = '#1f77b4'  # Azul
@@ -326,7 +326,7 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
             # Adiciona as fases e calcula o tempo entre elas
             for i, fase in enumerate(fases_validas):
                 tempo_fase = fase[0].strftime('%H:%M:%S')
-                ax1.axvline(x=fase[0], color='g', linestyle='--', alpha=0.5)
+                ax1.axvline(x=fase[0], color='grey', linestyle='--', alpha=0.5,linewidth=2)
                 
                 # Calcula o tempo até a próxima fase
                 if i < len(fases_validas) - 1:
@@ -344,7 +344,7 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
                         texto_fase,
                         rotation=90,
                         verticalalignment='bottom',
-                        fontsize=8)
+                        fontsize=9)
            
             
             # if fases:
@@ -357,7 +357,7 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
             #                 fontsize=8)
            
             # Adiciona grade
-            ax1.grid(True, alpha=0.3)
+            ax1.grid(True, alpha=0.5,linewidth=1)
 
             #Adiciona set-point
            
@@ -376,7 +376,7 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
             
             # Salva o gráfico em um buffer de memória
             buf = io.BytesIO()
-            plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+            plt.savefig(buf, format='png', dpi=300, bbox_inches='tight')
             buf.seek(0)
             
             # Converte para base64
