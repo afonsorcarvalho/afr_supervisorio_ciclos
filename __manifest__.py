@@ -29,6 +29,8 @@
         'views/supervisorio_ciclos_views.xml',
         'views/authenticity_check_views.xml',
         'reports/report_txt_to_pdf.xml',
+        'reports/supervisorio_ciclo_reports_template.xml',
+        'reports/supervisorio_ciclo_reports.xml',
     ],
     'assets': {
         'web.assets_backend': [
