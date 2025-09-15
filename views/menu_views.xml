@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Menu principal -->
-    <menuitem 
-        id="menu_afr_supervisorio_ciclos"
-        name="Supervisório"
-        web_icon="afr_supervisorio_ciclos,static/description/icon.png"
-        sequence="10"/>
-
-    <!-- Submenu Operações -->
+   
     <!-- Action -->
     <record id="action_afr_supervisorio_ciclos_ciclos" model="ir.actions.act_window">
         <field name="name">Ciclos</field>
@@ -22,6 +15,14 @@
             </p>
         </field>
     </record>
+     <!-- Menu principal -->
+    <menuitem 
+        id="menu_afr_supervisorio_ciclos"
+        name="Supervisório"
+        web_icon="afr_supervisorio_ciclos,static/description/icon.png"
+        sequence="10"/>
+
+    <!-- Submenu Operações -->
     <menuitem 
         id="menu_afr_supervisorio_ciclos_operations"
         name="Ciclos"
