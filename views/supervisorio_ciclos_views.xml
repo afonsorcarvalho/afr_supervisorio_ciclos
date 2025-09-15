@@ -225,7 +225,7 @@
                 <field name="name"/>
                 <field name="equipment_id"/>
                 <field name="equipment_nickname"/>
-                <field name="cycle_type_id"/>
+                <!-- <field name="cycle_type_id"/> -->
                 <field name="cycle_features_id"/>
                 <field name="operator_id"/>
                 <field name="batch_number" string="Lote"/>
@@ -246,7 +246,7 @@
                     <filter string="Equipamento" name="equipment" context="{'group_by':'equipment_id'}"/>
                     <filter string="Apelido" name="equipment_nickname" context="{'group_by':'equipment_nickname'}"/>
                     <filter string="Categoria de Equipamento" name="equipment_category" context="{'group_by':'equipment_category_id'}"/>
-                    <filter string="Tipo de Ciclo" name="cycle_type" context="{'group_by':'cycle_type_id'}"/>
+                    <!-- <filter string="Tipo de Ciclo" name="cycle_type" context="{'group_by':'cycle_type_id'}"/> -->
                     <filter string="Status" name="state" context="{'group_by':'state'}"/>
                     <filter string="Operador" name="operator" context="{'group_by':'operator_id'}" />
                     <filter string="Data Início" name="start_date" context="{'group_by':'start_date:day'}"/>
@@ -282,7 +282,7 @@
                      color="state" mode="month" quick_add="False">
                 <field name="name"/>
                 <field name="equipment_id"/>
-                <field name="cycle_type_id"/>
+                <!-- <field name="cycle_type_id"/> -->
                 <field name="operator_id"/>
             </calendar>
         </field>
