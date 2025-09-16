@@ -308,6 +308,9 @@ class SupervisorioCiclos(models.Model):
             ciclo = self.env['afr.supervisorio.ciclos'].search([('name', '=', ciclo_name)])
             if ciclo:
                 _logger.debug(f"Ciclo {ciclo_name} já existe. Update dados do ciclo")
+                if ciclo.state == 'cancelado':
+                    _logger.debug(f"Ciclo {ciclo_name} está cancelado. Não será atualizado")
+                    continue
                 ciclo.update_cycle(arquivo,equipment_id)
                 continue
                
