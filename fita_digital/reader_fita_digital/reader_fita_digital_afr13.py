@@ -265,7 +265,10 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
                     times.append(row[0])
                     pressures.append(float(row[1]))  # PCI(Bar)
                     temperatures.append(float(row[2]))  # TCI(Celsius)
-                    umidity.append(float(row[3]))  # Umidade(%)
+                    try:
+                        umidity.append(float(row[3]))  # Umidade(%)
+                    except:
+                        continue
 
 
             # Configura o formato do eixo X para mostrar HH:mm:ss
