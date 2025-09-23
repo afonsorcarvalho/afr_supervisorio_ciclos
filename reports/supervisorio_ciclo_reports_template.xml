@@ -13,19 +13,22 @@
                     margin:0px;
                 }
                 .cycle-statistics {
-                    max-height: 400px;
-                    overflow: hidden;
+                    max-height: none;
+                    overflow: visible;
                     white-space: pre-wrap;
                     word-wrap: break-word;
                 }
                 .cycle-statistics pre {
                     margin: 0;
-                    padding: 0;
+                    padding: 10px;
                     border: none;
                     background: none;
                     font-family: Courier, 'Courier New', monospace;
                     font-size: 13px;
                     line-height: 1.2;
+                    display: block;
+                    white-space: pre;
+                    overflow: visible;
                 }
             </style>
                 
