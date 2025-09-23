@@ -571,6 +571,7 @@ class SupervisorioCiclos(models.Model):
             else:
                 record.cycle_statistics_txt = do.compute_statistics()
 
+    @api.depends('cycle_txt')
     def _compute_cycle_statistics_data(self):
         for record in self:
             do = self._get_dataobject(record.equipment_id, record.file_path)
