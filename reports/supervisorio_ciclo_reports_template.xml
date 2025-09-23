@@ -117,6 +117,9 @@
                             <div class="col-6  text-center" >
                                <span t-field="o.cycle_statistics_txt" />
                             </div>
+                            <div class="col-6  text-center" >
+                               
+                            </div>
                            
                         </div>
                         <div class="row mt-5">
