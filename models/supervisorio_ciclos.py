@@ -574,20 +574,35 @@ class SupervisorioCiclos(models.Model):
     @api.depends('cycle_txt')
     def _compute_cycle_statistics_data(self):
         for record in self:
-            do = self._get_dataobject(record.equipment_id, record.file_path)
             if not record.cycle_txt:
                 record.cycle_statistics_data = {}
                 continue
             try:
+                do = self._get_dataobject(record.equipment_id, record.file_path)
                 if record.cycle_type_id.fases_fita_digital:
                     fases = record.cycle_type_id.fases_fita_digital.split(',')
                     statistics = do.compute_statistics(fases)
                 else:
                     statistics = do.compute_statistics()
-                record.cycle_statistics_data = statistics
+                
+                # Garantir que os dados estão no formato correto
+                if isinstance(statistics, dict):
+                    # Converter para lista de tuplas se necessário
+                    formatted_data = []
+                    for fase, dados in statistics.items():
+                        if isinstance(dados, dict):
+                            formatted_data.append((fase, dados))
+                        else:
+                            formatted_data.append((fase, {}))
+                    record.cycle_statistics_data = formatted_data
+                elif isinstance(statistics, list):
+                    record.cycle_statistics_data = statistics
+                else:
+                    record.cycle_statistics_data = []
+                    
             except Exception as e:
-                _logger.error(f"Erro ao calcular estatísticas: {e}")
-                record.cycle_statistics_data = {}
+                _logger.error(f"Erro ao calcular estatísticas para ciclo {record.name}: {e}")
+                record.cycle_statistics_data = []
    
 
     def compute_cycle_graph(self):

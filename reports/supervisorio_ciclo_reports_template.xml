@@ -140,64 +140,66 @@
                                             </thead>
                                             <tbody>
                                                 <t t-foreach="o.cycle_statistics_data" t-as="fase_data">
-                                                    <tr>
-                                                        <td class="text-center" rowspan="3">
-                                                            <strong t-esc="fase_data[0]"/><br/>
-                                                            <small class="text-muted" t-esc="fase_data[1].get('Duration', 'N/A')"/>
-                                                        </td>
-                                                        <td class="text-center" rowspan="3">
-                                                            <span t-esc="fase_data[1].get('Duration', 'N/A')"/>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <strong>PCI (Bar)</strong>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('PCI(Bar)', {}).get('min', 'N/A')"/>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('PCI(Bar)', {}).get('max', 'N/A')"/>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('PCI(Bar)', {}).get('media', 'N/A')"/>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('PCI(Bar)', {}).get('moda', 'N/A')"/>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="text-center">
-                                                            <strong>TCI (Celsius)</strong>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('TCI(Celsius)', {}).get('min', 'N/A')"/>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('TCI(Celsius)', {}).get('max', 'N/A')"/>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('TCI(Celsius)', {}).get('media', 'N/A')"/>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('TCI(Celsius)', {}).get('moda', 'N/A')"/>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="text-center">
-                                                            <strong>ETO (Kg)</strong>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('ETO(Kg)', {}).get('min', 'N/A')"/>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('ETO(Kg)', {}).get('max', 'N/A')"/>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('ETO(Kg)', {}).get('media', 'N/A')"/>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span t-esc="fase_data[1].get('ETO(Kg)', {}).get('moda', 'N/A')"/>
-                                                        </td>
-                                                    </tr>
+                                                    <t t-if="fase_data and len(fase_data) >= 2">
+                                                        <tr>
+                                                            <td class="text-center" rowspan="3">
+                                                                <strong t-esc="fase_data[0]"/><br/>
+                                                                <small class="text-muted" t-esc="fase_data[1].get('Duration', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                            <td class="text-center" rowspan="3">
+                                                                <span t-esc="fase_data[1].get('Duration', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <strong>PCI (Bar)</strong>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('PCI(Bar)', {}).get('min', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('PCI(Bar)', {}).get('max', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('PCI(Bar)', {}).get('media', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('PCI(Bar)', {}).get('moda', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="text-center">
+                                                                <strong>TCI (Celsius)</strong>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('TCI(Celsius)', {}).get('min', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('TCI(Celsius)', {}).get('max', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('TCI(Celsius)', {}).get('media', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('TCI(Celsius)', {}).get('moda', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="text-center">
+                                                                <strong>ETO (Kg)</strong>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('ETO(Kg)', {}).get('min', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('ETO(Kg)', {}).get('max', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('ETO(Kg)', {}).get('media', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span t-esc="fase_data[1].get('ETO(Kg)', {}).get('moda', 'N/A') if isinstance(fase_data[1], dict) else 'N/A'"/>
+                                                            </td>
+                                                        </tr>
+                                                    </t>
                                                 </t>
                                             </tbody>
                                         </table>
@@ -207,6 +209,11 @@
                                     <div class="alert alert-info text-center">
                                         <i class="fa fa-info-circle"></i> Nenhuma estatística disponível para este ciclo.
                                     </div>
+                                </t>
+                                <t t-if="o.cycle_statistics_data and not o.cycle_statistics_data">
+                                    <div class="alert alert-warning text-center">
+                                        <i class="fa fa-exclamation-triangle"></i> Dados de estatísticas vazios ou em formato inválido.
+                            </div>
                                 </t>
                             </div>
                         </div>
