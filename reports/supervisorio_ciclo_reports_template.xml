@@ -12,6 +12,21 @@
                 .titulo_grafico {
                     margin:0px;
                 }
+                .cycle-statistics {
+                    max-height: 400px;
+                    overflow: hidden;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                }
+                .cycle-statistics pre {
+                    margin: 0;
+                    padding: 0;
+                    border: none;
+                    background: none;
+                    font-family: Courier, 'Courier New', monospace;
+                    font-size: 13px;
+                    line-height: 1.2;
+                }
             </style>
                 
                     <div class="page">
@@ -120,9 +135,11 @@
                                     Utiliza <pre> para manter a formatação original do texto.
                                     Documentação Odoo QWeb: https://www.odoo.com/documentation/16.0/developer/reference/addons/reporting/qweb.html#t-esc
                                 -->
-                                <pre style="font-family: Courier, 'Courier New', monospace; font-size: 13px; text-align: left; display: inline-block;">
-                                    <t t-esc="o.cycle_statistics_txt"/>
-                                </pre>
+                                <div class="cycle-statistics">
+                                    <pre>
+                                        <t t-esc="o.cycle_statistics_txt"/>
+                                    </pre>
+                                </div>
                             </div>
                             <div class="col-6  text-center" >
                                
