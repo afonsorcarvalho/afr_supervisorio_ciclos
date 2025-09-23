@@ -101,6 +101,12 @@ class SupervisorioCiclos(models.Model):
         store=False,
         help='Estatísticas do ciclo'
     )
+    cycle_statistics_data = fields.Json(
+        string='Dados das Estatísticas',
+        compute='_compute_cycle_statistics_data',
+        store=False,
+        help='Dados estruturados das estatísticas do ciclo'
+    )
     cycle_txt = fields.Text(
         string='Conteúdo do Arquivo',
         compute='_compute_cycle_txt',
@@ -564,6 +570,23 @@ class SupervisorioCiclos(models.Model):
                 record.cycle_statistics_txt = statistics
             else:
                 record.cycle_statistics_txt = do.compute_statistics()
+
+    def _compute_cycle_statistics_data(self):
+        for record in self:
+            do = self._get_dataobject(record.equipment_id, record.file_path)
+            if not record.cycle_txt:
+                record.cycle_statistics_data = {}
+                continue
+            try:
+                if record.cycle_type_id.fases_fita_digital:
+                    fases = record.cycle_type_id.fases_fita_digital.split(',')
+                    statistics = do.compute_statistics(fases)
+                else:
+                    statistics = do.compute_statistics()
+                record.cycle_statistics_data = statistics
+            except Exception as e:
+                _logger.error(f"Erro ao calcular estatísticas: {e}")
+                record.cycle_statistics_data = {}
    
 
     def compute_cycle_graph(self):
