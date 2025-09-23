@@ -114,8 +114,15 @@
                            </div>
                         </div>
                         <div class="row mt-5">
-                            <div class="col-6  text-center" >
-                               <span t-field="o.cycle_statistics_txt" />
+                            <div class="col-6 text-center">
+                                <!-- 
+                                    Exibe o texto puro de o.cycle_statistics_txt com fonte monoespaçada (Courier).
+                                    Utiliza <pre> para manter a formatação original do texto.
+                                    Documentação Odoo QWeb: https://www.odoo.com/documentation/16.0/developer/reference/addons/reporting/qweb.html#t-esc
+                                -->
+                                <pre style="font-family: Courier, 'Courier New', monospace; font-size: 13px; text-align: left; display: inline-block;">
+                                    <t t-esc="o.cycle_statistics_txt"/>
+                                </pre>
                             </div>
                             <div class="col-6  text-center" >
                                
