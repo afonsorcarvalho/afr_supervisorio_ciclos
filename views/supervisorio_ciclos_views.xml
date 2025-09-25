@@ -279,7 +279,7 @@
             <calendar string="Ciclos" date_start="start_date" date_stop="end_date" 
                      color="state" mode="month" quick_add="False">
                 <field name="name"/>
-                <field name="equipment_id"/>
+                <field name="equipment_id" context="{'show_apelido_first': True}" filters="True"/>
                 <!-- <field name="cycle_type_id"/> -->
                 <field name="operator_id"/>
             </calendar>
@@ -293,9 +293,9 @@
         <field name="arch" type="xml">
             <pivot string="Análise de Ciclos">
                 <field name="equipment_id" type="row"/>
-                <field name="cycle_type_id" type="row"/>
-                <field name="state" type="col"/>
-                <field name="duration" type="measure"/>
+                <field name="start_date" type="col" interval="month"/>
+               
+                
             </pivot>
         </field>
     </record>
