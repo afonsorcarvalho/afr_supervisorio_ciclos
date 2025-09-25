@@ -279,6 +279,82 @@ class SupervisorioCiclos(models.Model):
             raise UserError('Apenas ciclos pausados podem ser retomados.')
         self.write({'state': 'em_andamento'})
     
+    def action_abrir_wizard_ler_diretorio_ciclos(self):
+        """
+        Abre o wizard para configurar as datas da leitura do diretório de ciclos.
+        Funciona tanto no formulário quanto na tree view.
+        """
+        # Se chamado da tree view (sem registro específico), não usa ensure_one()
+        if len(self) == 1:
+            self.ensure_one()
+            active_id = self.id
+            default_equipment_id = self.equipment_id.id if self.equipment_id else False
+        else:
+            # Chamado da tree view sem seleção específica
+            active_id = False
+            default_equipment_id = False
+        
+        # Abre o wizard
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Configurar Leitura de Diretório',
+            'res_model': 'wizard.ler.diretorio.ciclos',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'active_model': self._name,
+                'active_id': active_id,
+                'default_equipment_id': default_equipment_id,
+            }
+        }
+
+    def action_atualizar_dados_ciclo_atual(self):
+        """
+        Atualiza os dados do ciclo atual lendo o arquivo da fita digital.
+        """
+        self.ensure_one()
+        
+        # Verifica se o ciclo tem um arquivo associado
+        if not self.file_path:
+            raise UserError('Este ciclo não possui um arquivo associado para atualização.')
+        
+        # Verifica se o arquivo existe
+        if not os.path.exists(self.file_path):
+            raise UserError(f'O arquivo {self.file_path} não foi encontrado no sistema.')
+        
+        # Verifica se o equipamento está definido
+        if not self.equipment_id:
+            raise UserError('Este ciclo não possui um equipamento associado.')
+        
+        try:
+            # Cria o objeto arquivo no formato esperado pelo método update_cycle
+            arquivo_info = {
+                'name': os.path.basename(self.file_path),
+                'path': os.path.dirname(self.file_path)
+            }
+            
+            # Chama o método update_cycle para atualizar os dados
+            self.update_cycle(arquivo_info, self.equipment_id)
+            
+            # Força o recálculo dos campos computados
+            self._compute_cycle_txt()
+            self._compute_cycle_statistics_txt()
+            self._compute_cycle_statistics_data()
+            self.compute_cycle_graph()
+            
+            # Força o recálculo de todos os campos computados no registro
+            self.invalidate_cache()
+            
+            # Força a atualização da view atual sem abrir nova janela
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'reload',
+            }
+            
+        except Exception as e:
+            _logger.error(f"Erro ao atualizar dados do ciclo {self.name}: {str(e)}")
+            raise UserError(f'Erro ao atualizar dados do ciclo: {str(e)}')
+
     def action_ler_diretorio_ciclos(self,equipment_alias=None,equipment_ns=None,equipment_id=None,data_inicial=None,data_final=None):
         #self.ensure_one()
         _logger.info(f"action_ler_diretorio_ciclos equipamento: {equipment_id}")

@@ -2,16 +2,18 @@
 <odoo>
    
     <!-- Action -->
-    <record id="action_afr_supervisorio_ciclos_ciclos" model="ir.actions.act_window">
-        <field name="name">Ciclos</field>
+    <record id="action_afr_supervisorio_ciclos_all" model="ir.actions.act_window">
+        <field name="name">Todos os Ciclos</field>
         <field name="res_model">afr.supervisorio.ciclos</field>
-        <field name="view_mode">tree,form,calendar,pivot</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_cycle_type_eto': 1}</field>
+         <field name="search_view_id" ref="afr_supervisorio_ciclos.view_afr_supervisorio_ciclos_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('afr_supervisorio_ciclos.view_afr_supervisorio_ciclos_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_afr_supervisorio_ciclos_form')})]"/> 
         <field name="help" type="html">
-            <p class="o_view_nocontent_empty_folder">
-                Não há ciclos cadastrados.
-            </p>
-            <p>
-                Os ciclos serão registrados automaticamente pelo sistema.
+            <p class="o_view_nocontent_smiling_face">
+                Nenhum ciclo encontrado eles serão registrados automaticamente pelo sistema.
             </p>
         </field>
     </record>
@@ -31,10 +33,11 @@
 
     <menuitem 
         id="menu_afr_supervisorio_ciclos_ciclos"
-        name="Ciclos"
+        name="Todos os Ciclos"
         parent="menu_afr_supervisorio_ciclos_operations"
-        action="action_afr_supervisorio_ciclos_ciclos"
+        action="action_afr_supervisorio_ciclos_all"
         sequence="1"/>
+
     
     <!-- Equipamentos -->
     <menuitem name="Equipamentos" id="afr_supervisorio_ciclos.equipments_list_menu" parent="menu_afr_supervisorio_ciclos" action="engc_os.equipment_action_window" />
@@ -53,5 +56,13 @@
         parent="menu_afr_supervisorio_ciclos_config"
         action="action_cycle_type"
         sequence="1"/>
+
+    <menuitem 
+        id="menu_ler_diretorio_ciclos"
+        name="Ler Diretório"
+        parent="menu_afr_supervisorio_ciclos_config"
+        action="action_wizard_ler_diretorio_ciclos_tree"
+        sequence="2"
+        groups="base.group_system"/>
 
 </odoo> 

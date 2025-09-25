@@ -17,6 +17,33 @@ class EngcEquipment(models.Model):
     chamber_size = fields.Float(string="Volume Câmara (L)")
     cycle_path = fields.Char(string="Diretorio do ciclo")
     
+    def name_get(self):
+        """
+        Personaliza a exibição do nome do equipamento para mostrar o apelido primeiro.
+        """
+        result = []
+        for record in self:
+            # Verifica se deve mostrar apelido primeiro (contexto do wizard)
+            show_apelido_first = self.env.context.get('show_apelido_first', False)
+            
+            if show_apelido_first:
+                apelido = record.apelido or ""
+                nome = record.name or ""
+                if apelido and nome:
+                    display_name = f"{apelido} - {nome}"
+                elif apelido:
+                    display_name = apelido
+                elif nome:
+                    display_name = nome
+                else:
+                    display_name = f"Equipamento {record.id}"
+            else:
+                # Comportamento padrão
+                display_name = record.name or f"Equipamento {record.id}"
+            
+            result.append((record.id, display_name))
+        return result
+
     def action_read_cycles(self):
         _logger.info(f"Lendo ciclos do equipamento {self}")
         self.env['afr.supervisorio.ciclos'].action_ler_diretorio_ciclos(equipment_id=self)

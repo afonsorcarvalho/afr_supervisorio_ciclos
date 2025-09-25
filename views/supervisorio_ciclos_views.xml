@@ -17,8 +17,10 @@
                    
                     <button name="action_cancel" string="Reprovar" type="object" 
                         attrs="{'invisible': [('state', 'in', ['concluido', 'cancelado'])]}"/>
-                    <button name="action_ler_diretorio_ciclos" string="Ler Diretório" type="object" 
+                    <button name="action_abrir_wizard_ler_diretorio_ciclos" string="Ler Diretório" type="object" 
                       groups="base.group_system"/>
+                    <button name="action_atualizar_dados_ciclo_atual" string="Atualizar Dados" type="object" 
+                      groups="base.group_system" attrs="{'invisible': [('file_path', '=', False)]}"/>
                     <button name="compute_cycle_graph" string="Atualizar Grafico" type="object" 
                        groups="base.group_system"/>
                     <field name="state" widget="statusbar" 
