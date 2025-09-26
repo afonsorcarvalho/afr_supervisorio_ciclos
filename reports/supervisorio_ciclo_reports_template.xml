@@ -101,6 +101,8 @@
                         
                         <!-- Tabela de Estatísticas do Ciclo -->
                         <t t-set="cycle_stats" t-value="o.get_cycle_statistics_for_report()"/>
+                        <!-- debug -->
+                        <div>rows: <t t-esc="cycle_stats and cycle_stats.get('rows') and len(cycle_stats.get('rows'))"/> | vars: <t t-esc="cycle_stats and cycle_stats.get('variables') and len(cycle_stats.get('variables'))"/></div>
                         
                         <div class="row mt-3 mb-3" t-if="cycle_stats and cycle_stats.get('rows') and len(cycle_stats.get('rows')) > 0">
                             <div class="col-12">
@@ -127,12 +129,12 @@
                                             <t t-foreach="cycle_stats.get('rows')" t-as="r">
                                                 <tr>
                                                     <td t-esc="r.get('fase')"/>
-                                                    <td class="text-center" t-esc="r.get('duracao')"/>
+                                                    <td class="text-center" t-esc="(r.get('duracao') if r.get('duracao') else '-')"/>
                                                     <t t-foreach="cycle_stats.get('variables')" t-as="v">
                                                         <t t-set="m" t-value="r.get('metrics').get(v) if r.get('metrics') else {}"/>
-                                                        <td class="text-end" t-esc="'%.2f' % (((m and m.get('min')) or 0.0))"/>
-                                                        <td class="text-end" t-esc="'%.2f' % (((m and m.get('max')) or 0.0))"/>
-                                                        <td class="text-end" t-esc="'%.2f' % (((m and m.get('media')) or 0.0))"/>
+                                                        <td class="text-end" t-esc="(('%.2f' % m.get('min')) if (m is not None and m.get('min') is not None) else '-')"/>
+                                                        <td class="text-end" t-esc="(('%.2f' % m.get('max')) if (m is not None and m.get('max') is not None) else '-')"/>
+                                                        <td class="text-end" t-esc="(('%.2f' % m.get('media')) if (m is not None and m.get('media') is not None) else '-')"/>
                                                     </t>
                                                 </tr>
                                             </t>

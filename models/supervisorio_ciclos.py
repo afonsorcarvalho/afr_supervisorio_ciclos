@@ -738,10 +738,21 @@ class SupervisorioCiclos(models.Model):
             _logger.info(f"Estatísticas calculadas para relatório {self.name}: {statistics}")
             _logger.info(f"Tipo das estatísticas: {type(statistics)}")
 
+            # Se vier como string, tentar converter para dict de forma segura
+            if isinstance(statistics, str):
+                try:
+                    import ast
+                    statistics_eval = ast.literal_eval(statistics)
+                    if isinstance(statistics_eval, dict):
+                        statistics = statistics_eval
+                        _logger.info("Estatísticas eram string; convertidas com sucesso para dict via literal_eval")
+                except Exception as conv_err:
+                    _logger.warning(f"Falha ao converter estatísticas string para dict: {conv_err}")
+
             # Construir estrutura dinâmica baseada nas chaves presentes nas estatísticas
             if isinstance(statistics, dict):
                 # Coletar variáveis na ordem de aparição (exclui Duration)
-                variables: list[str] = []
+                variables = []
                 for fase, dados in statistics.items():
                     if not isinstance(dados, dict):
                         continue
