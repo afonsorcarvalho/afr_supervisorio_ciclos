@@ -66,6 +66,11 @@ class DataObjectFitaDigital:
             
         self.reader_fita.size_header = size_header
         
+    def set_state_finalized_keys(self,state_finalized_keys):
+        self.reader_fita.set_state_finalized_keys(state_finalized_keys)
+    def set_state_aborted_keys(self,state_aborted_keys):
+        self.reader_fita.set_state_aborted_keys(state_aborted_keys)
+        
     def ler_diretorio_ciclos(self, directory_path="", extension_file_search=None, data_inicial=None, data_final=None):
         """
         Método para leitura recursiva de diretório de ciclos com filtro por data.

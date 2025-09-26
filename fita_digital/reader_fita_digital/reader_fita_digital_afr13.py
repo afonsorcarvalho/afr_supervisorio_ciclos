@@ -27,6 +27,8 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
         """
         super().__init__(full_path_file)
         self.size_header = 24
+        self.state_finalized_keys = ["CICLO FINALIZADO"]
+        self.state_aborted_keys = ["CICLO ABORTADO"]
 
     def _process_header_line(self, lines_body, body_dict):
         """

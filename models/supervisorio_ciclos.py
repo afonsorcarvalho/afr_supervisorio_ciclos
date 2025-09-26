@@ -255,7 +255,7 @@ class SupervisorioCiclos(models.Model):
             raise UserError('Apenas ciclos em andamento podem ser concluídos.')
         self.write({
             'state': 'concluido',
-            'end_date': fields.Datetime.now()
+            
         })
 
     def action_cancel(self):
@@ -264,7 +264,7 @@ class SupervisorioCiclos(models.Model):
             raise UserError('Este ciclo não pode ser cancelado.')
         self.write({
             'state': 'cancelado',
-            'end_date': fields.Datetime.now()
+           
         })
 
     def action_pause(self):
@@ -629,8 +629,14 @@ class SupervisorioCiclos(models.Model):
        
         do.register_reader_fita(reader_class(file_path), 
                                size_header=cycle_type_id.header_lines)
-       
-        
+        #definindo as chaves de estado finalizado e abortado
+        if cycle_type_id.end_datetime_tag:
+            # Converte a string com itens separados por vírgula em uma lista
+            state_finalized_keys_list = [key.strip() for key in cycle_type_id.end_datetime_tag.split(',')]
+            do.set_state_finalized_keys(state_finalized_keys_list)
+        if cycle_type_id.abort_datetime_tag:
+            state_aborted_keys_list = [key.strip() for key in cycle_type_id.abort_datetime_tag.split(',')]
+            do.set_state_aborted_keys(state_aborted_keys_list)
 
         return do
     

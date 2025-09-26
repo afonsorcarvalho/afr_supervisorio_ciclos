@@ -110,7 +110,13 @@ class ReaderFitaDigitalInterface(ABC):
             self.read_file()
 
         return self.lines_file[self.size_header:]   
-
+    
+    def set_state_finalized_keys(self,state_finalized_keys):
+        self.state_finalized_keys = state_finalized_keys
+        
+    def set_state_aborted_keys(self,state_aborted_keys):
+        self.state_aborted_keys = state_aborted_keys
+        
     @abstractmethod
     def read_header(self):
         """
