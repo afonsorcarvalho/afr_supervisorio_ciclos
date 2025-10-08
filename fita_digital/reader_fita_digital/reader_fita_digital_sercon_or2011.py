@@ -257,7 +257,7 @@ class ReaderFitaDigitalSerconOr2011(ReaderFitaDigitalInterface):
                 
                 'INICIO DA HOMOGENIZACAO', 
                 'INICIO DA ESTERILIZACAO',
-                'TERMINO DA ESTERILIZACAO',
+                'INICIO DA DESCOMPRESSAO',
           
             ]
     def make_graph(self, header, body):
@@ -348,7 +348,7 @@ class ReaderFitaDigitalSerconOr2011(ReaderFitaDigitalInterface):
                 
                
                     
-                ax1.text(fase[0]+timedelta(seconds=10), ax1.get_ylim()[0] + 2,
+                ax1.text(fase[0]+timedelta(seconds=5), ax1.get_ylim()[0] + 0.5,
                         texto_fase,
                         rotation=90,
                         verticalalignment='bottom',
@@ -359,7 +359,8 @@ class ReaderFitaDigitalSerconOr2011(ReaderFitaDigitalInterface):
 
             #Adiciona set-point
             #TODO: Verificar se o header['TEMPERATURA DA AGUA'] se está pegando o valor correto
-            ax1.axhline(y=header.get(header['SET-POINT'], 0), color='black', linestyle='--', label='Set-Point')
+            print(f"############## header['SET-POINT']: {header['SET-POINT']}")
+            ax1.axhline(y=header.get('SET-POINT', 0), xmin=0, color='black', linestyle='--', label=f"Set-Point: {header.get('SET-POINT', 0)}")
             
             # Adiciona título
             plt.title(f'Curvas Paramétricas do Ciclo - {header.get("file_name", "Ciclo")}')
