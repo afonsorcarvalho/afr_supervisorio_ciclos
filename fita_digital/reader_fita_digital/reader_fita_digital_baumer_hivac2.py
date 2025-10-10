@@ -31,7 +31,7 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
         self.format_date = "%d-%m-%Y HH:mm:SS"
         
         self.header_fields.cycle_code_key = "CODIGO DE CARGA:"
-        self.header_fields.selected_cycle_key = "PROGRAMA 01:"
+        self.header_fields.selected_cycle_key = "PROGRAMA"
 
     def _process_header_line(self, lines_body, body_dict):
        
@@ -230,52 +230,32 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
 
     def get_state(self):
         """
-        Obtém o estado atual do ciclo da fita digital.
-        
-        Este método analisa as fases registradas no ciclo para determinar seu estado final.
-        O estado é determinado com base nas palavras-chave definidas em state_finalized_keys e state_aborted_keys.
-        
+        Obtém o estado atual do ciclo da fita digital (Baumer Hivac 2).
+
+        Procura por uma linha no formato 'FIM DE CICLO [hora]' nos dados brutos do body da fita.
+        Se encontrar, retorna 'concluido'. 
+        Caso não encontre, retorna 'incompleto'. 
+        Em caso de falha, retorna 'erro'.
+
         Returns:
             str: Estado do ciclo, podendo ser:
-                - 'concluido': Quando encontra uma fase com palavras-chave de finalização
-                - 'abortado': Quando encontra uma fase com palavras-chave de aborto
-                - 'incompleto': Quando não encontra fases de finalização ou aborto
-                - 'erro': Em caso de falha na análise
-            
-        Raises:
-            KeyError: Se a chave 'fase' não existir no dicionário body
-            AttributeError: Se houver erro ao acessar os dados da fase
-            Exception: Para erros inesperados durante a análise
-            
-        Exemplo:
-            >>> reader = ReaderFitaDigitalAfr13("arquivo.txt")
-            >>> estado = reader.get_state()
-            >>> print(estado)
-            'concluido'
+                - 'concluido': Quando encontra a linha "FIM DE CICLO [hora]" no body bruto
+                - 'incompleto': Quando não encontra essa linha
+                - 'erro': Em caso de falha
         """
         try:
-            if 'fase' not in self.body:
-                raise KeyError("Chave 'fase' não encontrada no dicionário body")
-                
-            # Verifica se é uma lista de fases
-            if isinstance(self.body['fase'], list):
-                # Procura por fases de conclusão ou cancelamento
-                for fase in self.body['fase']:
-                    # Verifica se a fase contém alguma das chaves de finalização
-                    if any(key in fase[1] for key in self.state_finalized_keys):
-                        return 'concluido'
-                    # Verifica se a fase contém alguma das chaves de aborto
-                    elif any(key in fase[1] for key in self.state_aborted_keys):
-                        return 'abortado'
-                # Se não encontrou nenhuma fase de finalização ou aborto, retorna em andamento
-                return 'incompleto'
-           
-                
-        except AttributeError as e:
-            _logger.error(f"Erro ao acessar dados da fase: {str(e)}")
-            return 'erro'
+            # Verifica se temos acesso aos dados brutos do body da fita
+            if not hasattr(self, 'lines_body_raw') or not self.lines_body_raw:
+                # Garante que as linhas brutas do body sejam lidas
+                self.read_body_lines_raw()
+            # Procura pela linha que começa exatamente com "FIM DE CICLO " seguido por uma hora (HH:MM:SS)
+            padrao = r'^FIM DE CICLO\s+\d{2}:\d{2}:\d{2}$'
+            for line in self.lines_body_raw:
+                if re.match(padrao, line.strip()):
+                    return 'concluido'
+            return 'incompleto'
         except Exception as e:
-            _logger.error(f"Erro inesperado ao obter estado: {str(e)}")
+            _logger.error(f"Erro ao determinar estado do ciclo: {str(e)}")
             return 'erro'
         
     def make_graph(self, header, body):
@@ -308,19 +288,19 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
             
             # Extrai os dados do body
             times = []
-            temperatures = []
-            pressures = []
-            umidity = []
+            measures = [[],[],[]]
+           
             
             for row in body.get('data', []):
+                
                 if len(row) >= 3:
                     times.append(row[0])
-                    pressures.append(float(row[1]))  # PCI(Bar)
-                    temperatures.append(float(row[2]))  # TCI(Celsius)
-                    try:
-                        umidity.append(float(row[3]))  # Umidade(%)
-                    except:
-                        continue
+                    measures[0].append(float(row[1]))
+                    measures[1].append(float(row[2]))
+                    measures[2].append(float(row[3]))
+                                       
+            
+                   
 
 
             # Configura o formato do eixo X para mostrar HH:mm:ss
@@ -331,44 +311,37 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
             # Configura os limites dos eixos Y conforme solicitado:
             # Temperatura e Umidade: 0 a 100
             # Pressão: -0.600 a 0.100
-            ax1.set_ylim(0, 100)      # Temperatura (°C) e Umidade (%) de 0 a 100
-            ax2.set_ylim(-1, 0.100)  # Pressão (bar) de -0.600 a 0.100
+            ax1.set_ylim(0, 150)      # Temperatura (°C) e Umidade (%) de 0 a 100
+            ax2.set_ylim(-1, 4)  # Pressão (bar) de -0.600 a 0.100
             # Rotaciona os rótulos do eixo X
             plt.setp(ax1.get_xticklabels(), rotation=90, ha='right', fontsize=10)
             
             # Plota temperatura no eixo Y esquerdo
             color1 = '#1f77b4'  # Azul
-            ax1.plot(times, temperatures, color=color1, label='Temperatura (°C)')
+            ax1.plot(times, measures[1], color=color1, label='Temperatura T1 (°C)')
             
             # Plota umidade no mesmo eixo Y esquerdo, com cor diferente
             color3 = '#2ca02c'  # Verde
-            if umidity:  # Só plota se houver dados de umidade
-                ax1.plot(times, umidity, color=color3, label='Umidade (%)')
+            ax1.plot(times, measures[2], color=color3, label='Temperatura T2 (°C)')
             
             ax1.set_xlabel('Tempo (HH:mm:ss)')
-            ax1.set_ylabel('Temperatura (°C) / Umidade (%)', color=color1)
+            ax1.set_ylabel('Temperatura (°C)', color=color1)
             ax1.tick_params(axis='y', labelcolor=color1)
            
             
             # Plota pressão no eixo Y direito
             color2 = '#d62728'  # Vermelho
-            ax2.plot(times, pressures, color=color2, label='Pressão (bar)')
+            ax2.plot(times, measures[0], color=color2, label='Pressão (bar)')
             ax2.set_ylabel('Pressão (bar)', color=color2)
             ax2.tick_params(axis='y', labelcolor=color2)
             #ax2.set_ylim(0, 2.5)  # Escala de pressão
             
             # Adiciona as fases como linhas verticais
             fases_permitidas = [
-                'LEAK-TEST',
-                'ACONDICIONAMENTO',
-                'PRE-VACUO',
-                'INJETANDO ETO',
-                'ESTERILIZANDO',
-                'LAVAGEM',
-                'AERACAO',
-                'HIPERVENTILACAO',
-                'CICLO ABORTADO',
-                'CICLO FINALIZADO'
+                'PULSOS DE VACUO',
+                'ESTERILIZACAO',
+                'SECAGEM',
+                'AERACAO'
                
                
             ]
