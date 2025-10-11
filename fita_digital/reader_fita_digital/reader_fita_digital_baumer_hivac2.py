@@ -34,6 +34,8 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
         self.header_fields.cycle_code_key = "CODIGO DE CARGA:"
         self.header_fields.selected_cycle_key = "PROGRAMA"
         self.header_fields.num_cycles_key = "NUMERO DE CICLOS:"
+        
+        self.state_aborted_keys = ["CICLO CANCELADO"]
 
     def _process_header_line(self, lines_body, body_dict):
        
@@ -257,34 +259,40 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
 
     def get_state(self):
         """
-        Obtém o estado atual do ciclo da fita digital (Baumer Hivac 2).
+        Determina o estado atual do ciclo da fita digital (Baumer Hivac 2).
 
-        Procura por uma linha no formato 'FIM DE CICLO [hora]' nos dados brutos do body da fita.
-        Se encontrar, retorna 'concluido'. 
-        Caso não encontre, retorna 'incompleto'. 
-        Em caso de falha, retorna 'erro'.
+        O método verifica as linhas brutas do corpo da fita para identificar finalização ou cancelamento do ciclo:
+        - Se encontrar uma linha no formato 'FIM DE CICLO [hora]', retorna 'concluido'.
+        - Se encontrar uma linha no formato 'CICLO CANCELADO [hora]', retorna 'abortado'.
+        - Se nenhuma dessas condições for satisfeita, assume que o ciclo está 'incompleto'.
+        - Em caso de erro durante o processamento, retorna 'erro'.
 
         Returns:
-            str: Estado do ciclo, podendo ser:
-                - 'concluido': Quando encontra a linha "FIM DE CICLO [hora]" no body bruto
-                - 'incompleto': Quando não encontra essa linha
-                - 'erro': Em caso de falha
+            str: Estado do ciclo, que pode ser:
+                - 'concluido': Ao localizar "FIM DE CICLO [hora]" no corpo da fita
+                - 'abortado': Ao localizar "CICLO CANCELADO [hora]" no corpo da fita
+                - 'incompleto': Caso nenhuma das linhas acima seja encontrada
+                - 'erro': Se ocorrer alguma exceção no processo
         """
         try:
-            # Verifica se temos acesso aos dados brutos do body da fita
+            # Garante que as linhas brutas do corpo estejam carregadas
             if not hasattr(self, 'lines_body_raw') or not self.lines_body_raw:
-                # Garante que as linhas brutas do body sejam lidas
                 self.read_body_lines_raw()
-            # Procura pela linha que começa exatamente com "FIM DE CICLO " seguido por uma hora (HH:MM:SS)
+            # Regex para verificar conclusão ou cancelamento do ciclo
             padrao = r'^FIM DE CICLO\s+\d{2}:\d{2}:\d{2}$'
+            padrao2 = r'^CICLO CANCELADO\s+\d{2}:\d{2}:\d{2}$'
             for line in self.lines_body_raw:
+                # Verifica se a linha indica conclusão do ciclo
                 if re.match(padrao, line.strip()):
                     return 'concluido'
+                # Verifica se a linha indica ciclo abortado/cancelado
+                elif re.match(padrao2, line.strip()):
+                    return 'abortado'
+            # Nenhuma linha indicando fim ou cancelamento encontrada
             return 'incompleto'
         except Exception as e:
             _logger.error(f"Erro ao determinar estado do ciclo: {str(e)}")
             return 'erro'
-        
     def make_graph(self, header, body):
         """
         Gera um gráfico do ciclo de termodesinfecção.
@@ -371,7 +379,8 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
                 'INICIO TEMPO DE ESTERILIZACAO',
                 '3 SECAGEM',
                 '4 AERACAO',
-                'FIM DE CICLO'
+                'FIM DE CICLO',
+                
                
                
             ]
