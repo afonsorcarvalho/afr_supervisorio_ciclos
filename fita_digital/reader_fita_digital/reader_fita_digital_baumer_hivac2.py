@@ -419,7 +419,7 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
 
             #Adiciona set-point
             setpoint = float(header.get("TEMPERATURA:", 0).replace("oC", "").strip())
-            ax1.axhline(y=setpoint, color='black', linestyle='--', label=f'Set-Point: {setpoint} ºC',linewidth=1)
+            ax1.axhline(y=setpoint, color='black', linestyle='--', label=f'Set-Point: {setpoint} °C',linewidth=1)
             
             # Adiciona título
             plt.title(f'Curvas Paramétricas do Ciclo - {header.get("file_name", "Ciclo")}')
