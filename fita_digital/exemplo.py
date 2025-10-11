@@ -4,7 +4,7 @@ from reader_fita_digital.reader_fita_digital_afr13 import ReaderFitaDigitalAfr13
 from reader_fita_digital.reader_fita_digital_sercon_tds import ReaderFitaDigitalSerconTds
 from reader_fita_digital.reader_fita_digital_sercon_or2011 import ReaderFitaDigitalSerconOr2011
 from reader_fita_digital.reader_fita_digital_sercon_jp_lac210 import ReaderFitaDigitalSerconJpLac210
-from reader_fita_digital.reader_fita_digital_hivac_2 import ReaderFitaDigitalBaumerHivac2
+from reader_fita_digital.reader_fita_digital_baumer_hivac2 import ReaderFitaDigitalBaumerHivac2
 #dir_path = "/home/afonso/docker/odoo_engenapp/data/odoo/filestore/odoo-steriliza/ciclos_processados/VAPOR01/"
 dir_path = "/home/afonso/docker/odoo_engenapp/addons/afr_supervisorio_ciclos/fita_digital/"
 #dir_path = "/home/afonso/docker/odoo_engenapp/data/odoo/filestore/odoo-steriliza/ciclos_processados/TERMO01/"
@@ -13,7 +13,7 @@ dir_path = "/home/afonso/docker/odoo_engenapp/addons/afr_supervisorio_ciclos/fit
 do = DataObjectFitaDigital(directory_path=dir_path)
 #modulo = __import__('reader_fita_digital.reader_fita_digital_sercon_tds')
 #modulo = __import__('reader_fita_digital.reader_fita_digital_sercon_jp_lac210')
-modulo = __import__('reader_fita_digital.reader_fita_digital_hivac_2')
+modulo = __import__('reader_fita_digital.reader_fita_digital_baumer_hivac2')
 
 #modulo = __import__('reader_fita_digital.reader_fita_digital_sercon_or2011')
 #modulo = __import__('reader_fita_digital.reader_fita_digital_afr13')

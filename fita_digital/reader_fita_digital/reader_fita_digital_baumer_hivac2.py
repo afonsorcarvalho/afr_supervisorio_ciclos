@@ -114,7 +114,7 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
             print(f"Erro ao processar linha de medição: {str(e)}")
             
         return body_dict
-    def _process_phase_line(self, line, body_dict):
+    def _process_phase_line(self, line, body_dict, index, lines_body):
         """
         Processa uma linha de fase do ciclo e adiciona ao dicionário de dados.
 
@@ -133,9 +133,19 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
             padrao = r'^(\d{2}:\d{2}:\d{2})\s+OPERACAO\s+(\d+):\s+(.+)$'
             match = re.match(padrao, line.strip())
             
+            # Novo padrão para capturar apenas texto puro na fase, sem números float ou horas extras
+            # Exemplo de linha que queremos capturar: "INICIO TEMPO DE ESTERILIZACAO"
+            padrao2 = r'^([A-Z\s]+)$'
+            match2 = re.match(padrao2, line.strip())
+            
+            padrao3 = r'^([A-Z\s]+)(\d{2}:\d{2}:\d{2})$'
+            match3 = re.match(padrao3, line.strip())
+            
             if match:
-                hora = match.group(1)  # Captura a hora
-                fase = match.group(3).strip()  # Captura o texto após a hora e remove espaços extras
+                print(match)
+                fase = match.group(2).strip()+" "+match.group(3).strip()  # Captura a fase
+                hora = match.group(1).strip()  # Captura a hora
+               
                 
                 # Adiciona como array ao invés de dicionário
                 body_dict['fase'].append([
@@ -143,7 +153,22 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
                     fase
                 ])
                 return True, body_dict
-            
+            elif match2:
+                fase = match2.group(1).strip()  # Captura a hora
+                hora = lines_body[index+2].split()[0]
+                body_dict['fase'].append([
+                    hora,
+                    fase
+                ])
+                return True, body_dict
+            elif match3:
+                fase = match3.group(1).strip()  # Captura a hora
+                hora = match3.group(2).strip()  # Captura a hora
+                body_dict['fase'].append([
+                    hora,
+                    fase
+                ])
+                return True, body_dict
             return False, body_dict
             
         except Exception as e:
@@ -199,11 +224,11 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
         # Processa o cabeçalho
         body_dict = self._process_header_line(lines_body, body_dict)
         
-        for line in lines_body[1:]:
+        for index,line in enumerate(lines_body[1:]):
             line = line.strip()
             
             # Verifica se é uma linha de fase
-            is_phase, body_dict = self._process_phase_line(line, body_dict)
+            is_phase, body_dict = self._process_phase_line(line, body_dict, index, lines_body)
             
             if is_phase:
                 continue
@@ -338,10 +363,13 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
             
             # Adiciona as fases como linhas verticais
             fases_permitidas = [
-                'PULSOS DE VACUO',
-                'ESTERILIZACAO',
-                'SECAGEM',
-                'AERACAO'
+                '1 PULSOS DE VACUO',
+                'PULSO DE VACUO',
+                '2 ESTERILIZACAO',
+                'INICIO TEMPO DE ESTERILIZACAO',
+                '3 SECAGEM',
+                '4 AERACAO',
+                'FIM DE CICLO'
                
                
             ]
