@@ -29,9 +29,11 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
         self.header_fields.date_key = "DATA:"
         self.header_fields.time_key = "HORA:"
         self.format_date = "%d-%m-%Y HH:mm:SS"
-        
+        self.header_fields.temperature_key = "TEMPERATURA:"
+        self.header_fields.pulsos_vacuo_key = "PULSOS DE VACUO:"
         self.header_fields.cycle_code_key = "CODIGO DE CARGA:"
         self.header_fields.selected_cycle_key = "PROGRAMA"
+        self.header_fields.num_cycles_key = "NUMERO DE CICLOS:"
 
     def _process_header_line(self, lines_body, body_dict):
        
@@ -336,7 +338,7 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
             # Configura os limites dos eixos Y conforme solicitado:
             # Temperatura e Umidade: 0 a 100
             # Pressão: -0.600 a 0.100
-            ax1.set_ylim(0, 150)      # Temperatura (°C) e Umidade (%) de 0 a 100
+            ax1.set_ylim(0, 160)      # Temperatura (°C) e Umidade (%) de 0 a 100
             ax2.set_ylim(-1, 4)  # Pressão (bar) de -0.600 a 0.100
             # Rotaciona os rótulos do eixo X
             plt.setp(ax1.get_xticklabels(), rotation=90, ha='right', fontsize=10)
@@ -416,8 +418,8 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
             ax1.grid(True, alpha=0.5,linewidth=1)
 
             #Adiciona set-point
-           
-            #ax1.axhline(y=header.get('SETPOINT', 0), color='black', linestyle='--', label=f'Set-Point: {header.get("SETPOINT", 0)}')
+            setpoint = float(header.get("TEMPERATURA:", 0).replace("oC", "").strip())
+            ax1.axhline(y=setpoint, color='black', linestyle='--', label=f'Set-Point: {setpoint} ºC',linewidth=1)
             
             # Adiciona título
             plt.title(f'Curvas Paramétricas do Ciclo - {header.get("file_name", "Ciclo")}')

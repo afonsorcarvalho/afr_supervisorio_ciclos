@@ -11,7 +11,15 @@ class HeaderFields:
     equipment_key = "Equipamento:"
     operator_key = "Operador:"
     cycle_code_key = "Cod. ciclo:"
+    pulsos_vacuo_key = "Pulsos Vacuo:"
+    num_cycles_key = "N. ciclos:"
     selected_cycle_key = "Ciclo Selecionado:"
+    temperature_key = "TEMPERATURA:"
+    pressure_key = "PRESSAO:"
+    volume_key = "VOLUME:"
+    weight_key = "PESO:"
+    duration_key = "DURACAO:"
+    frequency_key = "FREQUENCIA:"
 
 class ReaderFitaDigitalInterface(ABC):
     """
