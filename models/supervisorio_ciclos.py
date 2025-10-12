@@ -63,6 +63,59 @@ class SupervisorioCiclos(models.Model):
     operator_id = fields.Many2one('res.users', string='Operador', 
         default=lambda self: self.env.user, tracking=True)
     
+    # Campos de Indicador Biológico (IB)
+    # Relacionamento Many2one com o cadastro de Indicadores Biológicos
+    ib_lote = fields.Many2one(
+        'afr.indicador.biologico',
+        string='Lote do Indicador Biológico',
+        tracking=True,
+        help='Indicador biológico utilizado neste ciclo. Clique para cadastrar/selecionar.'
+    )
+    # Campos relacionados para exibir marca e modelo do IB selecionado
+    ib_marca = fields.Char(
+        related='ib_lote.marca',
+        string='Marca do IB',
+        readonly=True,
+        store=True
+    )
+    ib_modelo = fields.Char(
+        related='ib_lote.modelo',
+        string='Modelo do IB',
+        readonly=True,
+        store=True
+    )
+    # Data/hora de início da incubação do IB
+    ib_data_inicio = fields.Datetime(
+        string='Data de Início de Incubação',
+        tracking=True,
+        help='Momento em que a incubação do IB foi iniciada.'
+    )
+    # Data/hora de fim da incubação do IB
+    ib_data_fim = fields.Datetime(
+        string='Data de Fim de Incubação',
+        tracking=True,
+        help='Momento em que a incubação do IB foi finalizada.'
+    )
+    # Resultado do IB
+    ib_resultado = fields.Selection(
+        [
+            ('positivo', 'Positivo'),
+            ('negativo', 'Negativo'),
+        ],
+        string='Resultado do IB',
+        tracking=True,
+        help='Resultado do indicador biológico após incubação.'
+    )
+    
+    
+    # Relacionamento com fotos do ciclo
+    fotos_ids = fields.One2many(
+        'afr.ciclo.fotos',
+        'ciclo_id',
+        string='Fotos do Ciclo',
+        help='Fotos associadas a este ciclo'
+    )
+    
     # Campos de arquivo
     file_path = fields.Char(
         string='Caminho do Arquivo',
@@ -162,6 +215,7 @@ class SupervisorioCiclos(models.Model):
                 record.duration = round(duration, 2)
             else:
                 record.duration = 0.0
+    
    
 
     @api.depends('state')
