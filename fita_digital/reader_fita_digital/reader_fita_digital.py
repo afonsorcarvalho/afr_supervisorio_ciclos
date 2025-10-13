@@ -5,21 +5,26 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-class HeaderFields:
-    date_key = "Data:"
-    time_key = "Hora:"
-    equipment_key = "Equipamento:"
-    operator_key = "Operador:"
-    cycle_code_key = "Cod. ciclo:"
-    pulsos_vacuo_key = "Pulsos Vacuo:"
-    num_cycles_key = "N. ciclos:"
-    selected_cycle_key = "Ciclo Selecionado:"
-    temperature_key = "TEMPERATURA:"
-    pressure_key = "PRESSAO:"
-    volume_key = "VOLUME:"
-    weight_key = "PESO:"
-    duration_key = "DURACAO:"
-    frequency_key = "FREQUENCIA:"
+class HeaderFields(object):
+    def __init__(self):
+        self.date_key = "Data:"
+        self.time_key = "Hora:"
+        self.equipment_key = "Equipamento:"
+        self.operator_key = "Operador:"
+        self.cycle_code_key = "Cod. ciclo:"
+        self.pulsos_vacuo_key = "Pulsos Vacuo:"
+        self.num_cycles_key = "N. ciclos:"
+        self.selected_cycle_key = "Ciclo Selecionado:"
+        self.temperature_key = "TEMPERATURA:"
+        self.pressure_key = "PRESSAO:"
+        self.volume_key = "VOLUME:"
+        self.weight_key = "PESO:"
+        self.duration_key = "DURACAO:"
+        self.frequency_key = "FREQUENCIA:"
+    
+    def __setattr__(self, name, value):
+        # Permite adicionar novas propriedades dinamicamente em tempo de execução
+        super().__setattr__(name, value)
 
 class ReaderFitaDigitalInterface(ABC):
     """
