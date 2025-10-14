@@ -217,7 +217,7 @@
                        
                         <div class="row mt-5">
                             <div class="col-6  text-left" >
-                            <t t-if=""o.notes"">
+                            <t t-if="o.notes">
                             
                                * Observações: 
                                  <span t-field="o.notes" /><br/> 
