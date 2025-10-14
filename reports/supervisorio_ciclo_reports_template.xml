@@ -216,10 +216,10 @@
                         </div>
                        
                         <div class="row mt-5">
-                            <div class="col-6  text-center" >
-                                <!-- ________________________________________<br/>
-                                 <span t-field="o.operator_id" /><br/> 
-                                Operador -->
+                            <div class="col-6  text-left" >
+                               * Observações: 
+                                 <span t-field="o.notes" /><br/> 
+                                
                             </div>
                             <div class="col-6  text-center">
                                 ________________________________________<br/>
