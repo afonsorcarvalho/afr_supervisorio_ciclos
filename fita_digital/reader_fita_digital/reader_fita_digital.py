@@ -87,7 +87,7 @@ class ReaderFitaDigitalInterface(ABC):
             IOError: Se houver erro na leitura do arquivo
         """
         try:
-            print(f"Lendo o arquivo: {self.file_name}")
+            #print(f"Lendo o arquivo: {self.file_name}")
             with open(self.file_name, 'r') as file:
                 self.lines_file = file.readlines()
                 return self.lines_file
@@ -178,7 +178,7 @@ class ReaderFitaDigitalInterface(ABC):
                     # Divide a linha no campo e pega o valor após ele, removendo espaços
                     header_values[field] = line.split(field)[1].strip()
 
-        print(f"header_values: {header_values}")
+        #print(f"header_values: {header_values}")
         return header_values
     
     @abstractmethod
@@ -329,9 +329,9 @@ class ReaderFitaDigitalInterface(ABC):
        
         error_msg = []
         duration = None
-        print(f"header: {header}")
-        print(f"body: {body}")
-        print(f"phases: {phases}")
+        #print(f"header: {header}")
+        #print(f"body: {body}")
+        #print(f"phases: {phases}")
         if not body or 'data' not in body:
             raise ValueError("Dados da fita não foram carregados")
 
@@ -349,11 +349,11 @@ class ReaderFitaDigitalInterface(ABC):
             # Calcula a duração entre as fases usando os índices
             try:
                 idx_fase_atual = [f[1] for f in body['fase'] ].index(fase_atual)
-                print(f"idx_fase_atual: {idx_fase_atual}, fase_atual: {fase_atual}")
+                #print(f"idx_fase_atual: {idx_fase_atual}, fase_atual: {fase_atual}")
                 if idx_fase_atual is None:
                     error_msg[i] = f"Não foi possível encontrar a fase {fase_atual}"
                     continue
-                print(f"idx_fase_atual: {idx_fase_atual}")
+                #print(f"idx_fase_atual: {idx_fase_atual}")
                 idx_fase_proxima = None
 
                 for fproxima in phases[i+1:]:
@@ -367,9 +367,9 @@ class ReaderFitaDigitalInterface(ABC):
                
                     
                     
-                print(f"idx_fase_proxima: {idx_fase_proxima}")
+                #print(f"idx_fase_proxima: {idx_fase_proxima}")
                 duration = self.calcular_tempo_entre_fases(fase_atual, fproxima)
-                print(f"duration: {duration}")
+                #print(f"duration: {duration}")
            
             except ValueError as e:
                 error_msg.append( f"A fase {fase_atual} não foi encontrada: {str(e)}")
@@ -399,7 +399,7 @@ class ReaderFitaDigitalInterface(ABC):
         """
         Formata o dicionário de estatísticas do ciclo em colunas alinhadas.
         """
-        print(f"statistics: {statistics}")
+        #print(f"statistics: {statistics}")
         linhas = [f'### Estatísticas do Ciclo {self.file_name.split("/")[-1].replace(".txt", "")}']
         for fase, dados in statistics.items():
             minutos, segundos = dados['Duration'].split(':')

@@ -421,7 +421,7 @@ class DataObjectFitaDigital:
             if indice_inicial > indice_final:
                 raise ValueError("O índice inicial deve ser menor que o índice final")
 
-            print(f"fases: {fases}")
+            #print(f"fases: {fases}")
             if not (0 <= indice_inicial < len(fases) and 0 <= indice_final < len(fases)):
                 raise IndexError("Índices fora do intervalo válido")
 
@@ -527,7 +527,7 @@ class DataObjectFitaDigital:
                 updated_datetimes[i] += timedelta(days=days_elapsed) 
                 if updated_datetimes[i]  < updated_datetimes[i - 1]:
                     days_elapsed +=1
-                    print(days_elapsed)
+                    #print(days_elapsed)
                     updated_datetimes[i] += timedelta(days=1)
 
             return updated_datetimes
@@ -588,11 +588,11 @@ class DataObjectFitaDigital:
             # Calcula a duração entre as fases usando os índices
             try:
                 idx_fase_atual = [f[1] for f in self.body_fita['fase'] ].index(fase_atual)
-                print(f"idx_fase_atual: {idx_fase_atual}, fase_atual: {fase_atual}")
+                #print(f"idx_fase_atual: {idx_fase_atual}, fase_atual: {fase_atual}")
                 if idx_fase_atual is None:
                     error_msg[i] = f"Não foi possível encontrar a fase {fase_atual}"
                     continue
-                print(f"idx_fase_atual: {idx_fase_atual}")
+                #print(f"idx_fase_atual: {idx_fase_atual}")
                 idx_fase_proxima = None
                 
                 for fproxima in fases[i+1:]:
@@ -606,9 +606,9 @@ class DataObjectFitaDigital:
                
                     
                     
-                print(f"idx_fase_proxima: {idx_fase_proxima}")
+                #print(f"idx_fase_proxima: {idx_fase_proxima}")
                 duration = self.calcular_tempo_entre_fases(idx_fase_atual, idx_fase_proxima)
-                print(f"duration: {duration}")
+                ##  print(f"duration: {duration}")
            
             except ValueError as e:
                 error_msg.append( f"A fase {fase_atual} não foi encontrada: {str(e)}")

@@ -148,22 +148,47 @@ class SupervisorioCiclos(models.Model):
     #         else:
     #             record.download_url = False
 
+    # -------------------------------------------------------------------------
+    # Cache de leitura do TXT / estatísticas / gráfico
+    # -------------------------------------------------------------------------
+    # Motivação:
+    # - Esses campos eram store=False e, por isso, o Odoo recalculava (lendo/parsing
+    #   do arquivo + estatísticas + gráfico) a cada abertura do formulário.
+    # - Para acelerar, persistimos os resultados (store=True) e usamos o mtime do
+    #   arquivo como "chave" de invalidação do cache.
+    #
+    # Estratégia:
+    # - Guardamos em `cycle_file_mtime` a data/hora (UTC) da última modificação do
+    #   TXT usada para gerar os caches.
+    # - Ao abrir o registro (read), comparamos `os.path.getmtime(file_path)` com
+    #   `cycle_file_mtime`. Se mudou (ou se não existe), atualizamos `cycle_file_mtime`,
+    #   disparando o recompute dos campos armazenados.
+    #
+    # Observação de segurança:
+    # - A atualização do mtime/cache é feita com sudo() para não quebrar a abertura
+    #   do formulário em perfis com permissão de leitura mas sem permissão de escrita.
+    cycle_file_mtime = fields.Datetime(
+        string='Data de Modificação do TXT (cache)',
+        readonly=True,
+        help='Data/hora (UTC) da última modificação do arquivo TXT usada para montar a fita, estatísticas e gráfico.'
+    )
+
     cycle_statistics_txt = fields.Text(
         string='Estatísticas do Ciclo',
         compute='_compute_cycle_statistics_txt',
-        store=False,
+        store=True,
         help='Estatísticas do ciclo'
     )
     cycle_statistics_data = fields.Json(
         string='Dados das Estatísticas',
         compute='_compute_cycle_statistics_data',
-        store=False,
+        store=True,
         help='Dados estruturados das estatísticas do ciclo'
     )
     cycle_txt = fields.Text(
         string='Conteúdo do Arquivo',
         compute='_compute_cycle_txt',
-        store=False,
+        store=True,
         help='Conteúdo do arquivo de ciclo'
     )
     cycle_txt_filename = fields.Char(
@@ -180,7 +205,7 @@ class SupervisorioCiclos(models.Model):
     cycle_graph = fields.Image(
         string='Gráfico do Ciclo',
         compute='compute_cycle_graph', 
-        store=False,
+        store=True,
         help='Gráfico gerado a partir dos dados do ciclo',
         # Opções disponíveis para o campo Image:
         max_width=1920,  # Largura máxima da imagem
@@ -389,14 +414,14 @@ class SupervisorioCiclos(models.Model):
             
             # Chama o método update_cycle para atualizar os dados
             self.update_cycle(arquivo_info, self.equipment_id)
-            
-            # Força o recálculo dos campos computados
-            self._compute_cycle_txt()
-            self._compute_cycle_statistics_txt()
-            self._compute_cycle_statistics_data()
-            self.compute_cycle_graph()
-            
-            # Força o recálculo de todos os campos computados no registro
+
+            # Atualiza o mtime de cache (se o arquivo mudou) para disparar recompute
+            # dos campos armazenados (fita / estatísticas / gráfico).
+            self._refresh_cache_mtime_if_needed(requested_fields=[
+                'cycle_txt', 'cycle_statistics_txt', 'cycle_statistics_data', 'cycle_graph'
+            ])
+
+            # Garante que o cliente recarregue a view com os valores já persistidos.
             self.invalidate_cache()
             
             # Força a atualização da view atual sem abrir nova janela
@@ -408,6 +433,33 @@ class SupervisorioCiclos(models.Model):
         except Exception as e:
             _logger.error(f"Erro ao atualizar dados do ciclo {self.name}: {str(e)}")
             raise UserError(f'Erro ao atualizar dados do ciclo: {str(e)}')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """
+        Ao criar ciclos com `file_path` já definido, salva também o mtime do arquivo.
+
+        Isso evita que a primeira abertura do formulário precise recalcular (cache miss).
+        """
+        for vals in vals_list:
+            file_path = vals.get('file_path')
+            if file_path and os.path.exists(file_path):
+                vals['cycle_file_mtime'] = self._get_file_mtime_utc(file_path)
+        return super(SupervisorioCiclos, self).create(vals_list)
+
+    def write(self, vals):
+        """
+        Ao alterar `file_path`, atualiza também o mtime do cache.
+        """
+        if 'file_path' in vals:
+            file_path = vals.get('file_path')
+            if file_path and os.path.exists(file_path):
+                vals = dict(vals)
+                vals['cycle_file_mtime'] = self._get_file_mtime_utc(file_path)
+            else:
+                vals = dict(vals)
+                vals['cycle_file_mtime'] = False
+        return super(SupervisorioCiclos, self).write(vals)
 
     def action_ler_diretorio_ciclos(self,equipment_alias=None,equipment_ns=None,equipment_id=None,data_inicial=None,data_final=None):
         #self.ensure_one()
@@ -616,7 +668,7 @@ class SupervisorioCiclos(models.Model):
         _logger.debug(f"lista_arquivos: {lista_arquivos}")
         return lista_arquivos
   
-    @api.depends('file_path')
+    @api.depends('file_path', 'cycle_file_mtime')
     def _compute_cycle_txt(self):
         for record in self:
             if record.file_path and os.path.exists(record.file_path):
@@ -697,10 +749,10 @@ class SupervisorioCiclos(models.Model):
     @api.depends('cycle_txt')
     def _compute_cycle_statistics_txt(self):
         for record in self:
-            do = self._get_dataobject(record.equipment_id,record.file_path)
-            if not record.cycle_txt:
+            if not record.file_path or not os.path.exists(record.file_path) or not record.cycle_txt:
                 record.cycle_statistics_txt = False
                 continue
+            do = record._get_dataobject(record.equipment_id, record.file_path)
             if record.cycle_type_id.fases_fita_digital:
                 fases = record.cycle_type_id.fases_fita_digital.split(',')
                 statistics = do.compute_statistics(fases)
@@ -712,8 +764,8 @@ class SupervisorioCiclos(models.Model):
     def _compute_cycle_statistics_data(self):
         for record in self:
             _logger.info(f"Computando estatísticas para ciclo {record.name}")
-            if not record.cycle_txt:
-                _logger.info(f"Ciclo {record.name} não possui cycle_txt")
+            if not record.file_path or not os.path.exists(record.file_path) or not record.cycle_txt:
+                _logger.info(f"Ciclo {record.name} não possui arquivo TXT acessível em file_path ou cycle_txt")
                 record.cycle_statistics_data = {}
                 continue
             try:
@@ -849,6 +901,7 @@ class SupervisorioCiclos(models.Model):
             return []
    
 
+    @api.depends('file_path', 'cycle_file_mtime', 'cycle_type_id', 'equipment_id')
     def compute_cycle_graph(self):
         
         """
@@ -858,10 +911,10 @@ class SupervisorioCiclos(models.Model):
         """
 
         for record in self:
-            do = self._get_dataobject(record.equipment_id,record.file_path)
-            if not record.cycle_txt:
+            if not record.file_path or not os.path.exists(record.file_path):
                 record.cycle_graph = False
                 continue
+            do = record._get_dataobject(record.equipment_id, record.file_path)
                 
             try:
                 process_graph = self.process_graph(record,do)
@@ -908,6 +961,75 @@ class SupervisorioCiclos(models.Model):
         _logger.debug(f"res: {res}")
             
         return res
+
+    # -------------------------------------------------------------------------
+    # Invalidação inteligente do cache por mtime (acelera abertura do formulário)
+    # -------------------------------------------------------------------------
+    def _get_file_mtime_utc(self, file_path):
+        """
+        Retorna o mtime (última modificação) do arquivo em UTC (datetime sem tz),
+        truncado para segundos para comparação estável.
+        """
+        try:
+            mtime_dt = datetime.utcfromtimestamp(os.path.getmtime(file_path))
+            return mtime_dt.replace(microsecond=0)
+        except Exception:
+            return False
+
+    def _refresh_cache_mtime_if_needed(self, requested_fields=None):
+        """
+        Atualiza `cycle_file_mtime` quando o arquivo TXT muda.
+
+        Isso é propositalmente "barato": só faz stat() no arquivo (getmtime), e
+        apenas quando os campos cacheados são solicitados na leitura.
+        """
+        cache_fields = {'cycle_txt', 'cycle_statistics_txt', 'cycle_statistics_data', 'cycle_graph'}
+        if requested_fields and not (cache_fields & set(requested_fields)):
+            return
+
+        # Evita loop caso algum fluxo interno chame read() durante a atualização.
+        if self.env.context.get('skip_cycle_cache_refresh'):
+            return
+
+        for record in self:
+            if not record.file_path:
+                continue
+
+            # Se o arquivo sumiu, limpamos o mtime para forçar recompute/limpeza dos caches.
+            if not os.path.exists(record.file_path):
+                if record.cycle_file_mtime:
+                    record.sudo().with_context(skip_cycle_cache_refresh=True).write({'cycle_file_mtime': False})
+                continue
+
+            current_mtime = self._get_file_mtime_utc(record.file_path)
+            stored_mtime = record.cycle_file_mtime
+            if stored_mtime:
+                stored_mtime = stored_mtime.replace(microsecond=0)
+
+            # Regras:
+            # - Se não há mtime armazenado, calculamos e armazenamos.
+            # - Se o mtime mudou, armazenamos o novo mtime (dispara recompute dos caches).
+            if not stored_mtime or stored_mtime != current_mtime:
+                record.sudo().with_context(skip_cycle_cache_refresh=True).write({'cycle_file_mtime': current_mtime})
+
+    def read(self, fields=None, load='_classic_read'):
+        """
+        Sobrescreve read() para invalidar caches baseados em arquivo apenas quando necessário.
+
+        Na abertura do formulário, o cliente chama read() para vários campos.
+        Aqui nós:
+        - verificamos se algum campo pesado (fita/estatísticas/gráfico) foi pedido;
+        - comparamos o mtime do arquivo com o mtime cacheado;
+        - se mudou, atualizamos `cycle_file_mtime`, o que dispara o recompute (store=True)
+          dos campos cacheados.
+        """
+        try:
+            self._refresh_cache_mtime_if_needed(requested_fields=fields)
+        except Exception as e:
+            # Nunca queremos quebrar a abertura do formulário por falha de cache.
+            _logger.warning(f"Falha ao validar cache por mtime em afr.supervisorio.ciclos.read(): {e}")
+
+        return super(SupervisorioCiclos, self).read(fields=fields, load=load)
 
     def _get_file_content(self):
         """Lê o conteúdo do arquivo TXT para o relatório PDF"""

@@ -234,7 +234,23 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
             _logger.error(f"Erro inesperado ao obter estado: {str(e)}")
             return 'erro'
         
-    def make_graph(self, header, body):
+    def _get_fases_permitidas(self):
+        """
+        Obtém as fases permitidas para o ciclo.
+        """
+        return  [
+                'LEAK-TEST',
+                'ACONDICIONAMENTO',
+                'PRE-VACUO',
+                'INJETANDO ETO',
+                'ESTERILIZANDO',
+                'LAVAGEM',
+                'AERACAO',
+                'CICLO ABORTADO',
+                'CICLO FINALIZADO'
+            ]
+        
+    def make_graph(self, header, body,fases_permitidas=None):
         """
         Gera um gráfico do ciclo de termodesinfecção.
 
@@ -314,20 +330,8 @@ class ReaderFitaDigitalAfr13(ReaderFitaDigitalInterface):
             #ax2.set_ylim(0, 2.5)  # Escala de pressão
             
             # Adiciona as fases como linhas verticais
-            fases_permitidas = [
-                'LEAK-TEST',
-                'ACONDICIONAMENTO',
-                'PRE-VACUO',
-                'INJETANDO ETO',
-                'ESTERILIZANDO',
-                'LAVAGEM',
-                'AERACAO',
-                'HIPERVENTILACAO',
-                'CICLO ABORTADO',
-                'CICLO FINALIZADO'
-               
-               
-            ]
+            if not fases_permitidas:
+                fases_permitidas = self._get_fases_permitidas()
             
             fases_validas = []
             for fase in body.get('fase', []):
