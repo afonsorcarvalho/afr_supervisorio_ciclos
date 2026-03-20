@@ -62,6 +62,100 @@ class SupervisorioCiclos(models.Model):
     notes = fields.Text(string='Observações', tracking=True)
     operator_id = fields.Many2one('res.users', string='Operador', 
         default=lambda self: self.env.user, tracking=True)
+
+    # -------------------------------------------------------------------------
+    # Assinatura do ciclo (cadastro de conselho, CPF e imagem em hr.employee)
+    # -------------------------------------------------------------------------
+    signature_employee_id = fields.Many2one(
+        'hr.employee',
+        string='Assinante',
+        tracking=True,
+        help='Funcionário responsável pela assinatura. Dados de conselho, CPF e imagem vêm do cadastro do funcionário.',
+    )
+    signature_date = fields.Datetime(
+        string='Data da assinatura',
+        tracking=True,
+    )
+    is_signed = fields.Boolean(
+        string='Ciclo assinado',
+        compute='_compute_is_signed',
+        store=True,
+    )
+    signature_employee_name = fields.Char(
+        related='signature_employee_id.name',
+        string='Nome do assinante',
+        readonly=True,
+    )
+    signature_professional_documentation = fields.Char(
+        related='signature_employee_id.afr_professional_documentation',
+        string='Documentação (assinatura)',
+        readonly=True,
+    )
+    signature_professional_council = fields.Char(
+        related='signature_employee_id.afr_professional_council',
+        string='Conselho (assinatura)',
+        readonly=True,
+    )
+    signature_professional_council_number = fields.Char(
+        related='signature_employee_id.afr_professional_council_number',
+        string='Nº no conselho (assinatura)',
+        readonly=True,
+    )
+    signature_professional_cpf = fields.Char(
+        related='signature_employee_id.afr_professional_cpf',
+        string='CPF (assinatura)',
+        readonly=True,
+    )
+    signature_image = fields.Binary(
+        related='signature_employee_id.afr_signature_image',
+        string='Imagem da assinatura',
+        readonly=True,
+    )
+
+    @api.depends('signature_employee_id', 'signature_date')
+    def _compute_is_signed(self):
+        for rec in self:
+            rec.is_signed = bool(rec.signature_employee_id and rec.signature_date)
+
+    @api.constrains('signature_employee_id', 'signature_date')
+    def _check_signature_consistency(self):
+        for rec in self:
+            if bool(rec.signature_employee_id) != bool(rec.signature_date):
+                raise ValidationError(
+                    'Assinante e data da assinatura devem ser informados juntos, ou ambos vazios.'
+                )
+
+    def action_sign_cycle(self):
+        """Registra assinatura usando o funcionário do usuário atual ou o selecionado (Administradores)."""
+        self.ensure_one()
+        Employee = self.env['hr.employee']
+        if self.env.user.has_group('base.group_system') and self.signature_employee_id:
+            employee = self.signature_employee_id
+        else:
+            employee = Employee.search([('user_id', '=', self.env.uid)], limit=1)
+        if not employee:
+            raise UserError(
+                'Não há funcionário vinculado ao seu usuário. '
+                'Configure "Usuário relacionado" no cadastro do funcionário (Funcionários).'
+            )
+        if not employee.afr_signature_image:
+            raise UserError(
+                'Cadastre a imagem da assinatura no cadastro do funcionário antes de assinar o ciclo.'
+            )
+        self.write({
+            'signature_employee_id': employee.id,
+            'signature_date': fields.Datetime.now(),
+        })
+        return True
+
+    def action_clear_cycle_signature(self):
+        """Remove a assinatura do ciclo (uso administrativo)."""
+        self.ensure_one()
+        self.write({
+            'signature_employee_id': False,
+            'signature_date': False,
+        })
+        return True
     
     # Campos de Indicador Biológico (IB)
     # Relacionamento Many2one com o cadastro de Indicadores Biológicos

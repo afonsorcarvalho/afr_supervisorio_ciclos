@@ -11,6 +11,7 @@
     'website': 'https://www.afrsistemas.com.br',
     'depends': [
         'base',
+        'hr',
         'engc_os',
         'mail',
         'portal',
@@ -20,6 +21,7 @@
         'security/supervisorio_groups.xml',
         'security/ir.model.access.csv',
         'data/supervisorio_manager_data.xml',
+        'views/hr_employee_views.xml',
         'views/res_config_settings_views.xml',
         'views/portal_templates.xml',
         'views/cycle_features_views.xml',
