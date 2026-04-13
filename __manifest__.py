@@ -30,6 +30,7 @@
         'views/indicador_biologico_views.xml',
         'views/wizard_ler_diretorio_ciclos_views.xml',
         'views/menu_views.xml',
+        'views/manual_usuario_supervisorio.xml',
         'views/supervisorio_ciclos_views.xml',
         'views/authenticity_check_views.xml',
         'reports/report_txt_to_pdf.xml',
