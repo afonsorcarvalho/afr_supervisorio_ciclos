@@ -160,23 +160,21 @@ class ReaderFitaDigitalInterface(ABC):
 
         # Obtém o conteúdo do arquivo
         file_content = self.read_header_file_content()
-        
-        # Itera sobre cada linha do conteúdo do arquivo
+
+        # Cacheia os campos uma vez por chamada — dir() + getattr são caros e estáveis.
+        header_fields_names = [
+            getattr(self.header_fields, attr)
+            for attr in dir(self.header_fields)
+            if not attr.startswith('_')
+        ]
+
         for line in file_content:
-            # Remove caracteres nulos e espaços em branco do início e fim da linha
             line = line.replace('\x00', '').strip()
-            
-            # Obtém todos os nomes dos campos do cabeçalho definidos na classe
-            header_fields_names = [getattr(self.header_fields, attr) for attr in dir(self.header_fields) if not attr.startswith('_')]
-            
-            # Itera sobre cada campo do cabeçalho
+            if not line:
+                continue
             for field in header_fields_names:
-                
-                
-                # Se o campo for encontrado na linha, extrai seu valor
                 if field in line:
-                    # Divide a linha no campo e pega o valor após ele, removendo espaços
-                    header_values[field] = line.split(field)[1].strip()
+                    header_values[field] = line.split(field, 1)[1].strip()
 
         return header_values
     

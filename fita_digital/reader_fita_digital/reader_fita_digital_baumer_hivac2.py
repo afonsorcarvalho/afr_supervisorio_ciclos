@@ -6,6 +6,16 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
+# Pré-compilados em escopo de módulo: evita lookup no re._cache a cada linha.
+_BODY_LINE_RE = re.compile(
+    r'^\s*(\d{2}:\d{2}:\d{2})\s+([-+]?\d+(?:[.,]\d+)?)\s+([-+]?\d+(?:[.,]\d+)?)\s+([-+]?\d+(?:[.,]\d+)?)\s*$'
+)
+_PHASE_OPERACAO_RE = re.compile(r'^(\d{2}:\d{2}:\d{2})\s+OPERACAO\s+(\d+):\s+(.+)$')
+_PHASE_TEXT_RE = re.compile(r'^([A-Z\s]+)$')
+_PHASE_TEXT_HORA_RE = re.compile(r'^([A-Z\s]+)(\d{2}:\d{2}:\d{2})$')
+_FIM_CICLO_RE = re.compile(r'^FIM DE CICLO\s+\d{2}:\d{2}:\d{2}$')
+_CICLO_CANCELADO_RE = re.compile(r'^CICLO CANCELADO\s+\d{2}:\d{2}:\d{2}$')
+
 
 class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
     """
@@ -90,33 +100,20 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
         Processa a linha de corpo e cria um dicionário com as colunas.
         """
         try:
-            
-            
-            # Regex para validar linha com hora e valores numéricos com vírgulas
-            # Regex para reconhecer linhas do tipo:
-            # 15:52:20 1.43 107.2 106.8
-            # ou seja, hora (HH:MM:SS) seguido de três valores numéricos (podem ser inteiros ou floats, separados por espaço)
-            padrao = r'^\s*(\d{2}:\d{2}:\d{2})\s+([-+]?\d+(?:[.,]\d+)?)\s+([-+]?\d+(?:[.,]\d+)?)\s+([-+]?\d+(?:[.,]\d+)?)\s*$'
-            match = re.match(padrao, line.strip())
-            
-            
+            match = _BODY_LINE_RE.match(line)
             if not match:
                 return body_dict
-                
-            valores = match.groups()
-            
-            
-            # Adiciona ":00" ao horário (primeiro valor)
-            hora_completa = valores[0] 
-            medicao = [
-                hora_completa if i == 0 else float(valor.replace(',', '.'))
-                for i, valor in enumerate(valores)
-            ]
-            body_dict['data'].append(medicao)
-          
+
+            hora, v1, v2, v3 = match.groups()
+            body_dict['data'].append([
+                hora,
+                float(v1.replace(',', '.')),
+                float(v2.replace(',', '.')),
+                float(v3.replace(',', '.')),
+            ])
         except Exception as e:
-            print(f"Erro ao processar linha de medição: {str(e)}")
-            
+            _logger.debug("Erro ao processar linha de medição: %s", e)
+
         return body_dict
     def _process_phase_line(self, line, body_dict, index, lines_body):
         """
@@ -131,53 +128,37 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
         """
         
         try:
-            # Regex para encontrar hora (HH:MM:SS) seguida de texto
-            # Padrão para capturar linhas do tipo "hh:MM:SS OPERACAO [NUM]: STR"
-            # Exemplo: 16:10:13 OPERACAO 3: SECAGEM
-            padrao = r'^(\d{2}:\d{2}:\d{2})\s+OPERACAO\s+(\d+):\s+(.+)$'
-            match = re.match(padrao, line.strip())
-            
-            # Novo padrão para capturar apenas texto puro na fase, sem números float ou horas extras
-            # Exemplo de linha que queremos capturar: "INICIO TEMPO DE ESTERILIZACAO"
-            padrao2 = r'^([A-Z\s]+)$'
-            match2 = re.match(padrao2, line.strip())
-            
-            padrao3 = r'^([A-Z\s]+)(\d{2}:\d{2}:\d{2})$'
-            match3 = re.match(padrao3, line.strip())
-            
+            stripped = line.strip()
+            if not stripped:
+                return False, body_dict
+
+            # Filtro barato: linhas de fase começam com dígito (HH:MM:SS) ou letra maiúscula.
+            first = stripped[0]
+            if not (first.isdigit() or first.isupper()):
+                return False, body_dict
+
+            match = _PHASE_OPERACAO_RE.match(stripped)
             if match:
-                print(match)
-                fase = match.group(2).strip()+" "+match.group(3).strip()  # Captura a fase
-                hora = match.group(1).strip()  # Captura a hora
-               
-                
-                # Adiciona como array ao invés de dicionário
-                body_dict['fase'].append([
-                    hora,
-                    fase
-                ])
+                hora, num, nome = match.group(1), match.group(2), match.group(3)
+                body_dict['fase'].append([hora, f"{num.strip()} {nome.strip()}"])
                 return True, body_dict
-            elif match2:
-                fase = match2.group(1).strip()  # Captura a hora
-                hora = lines_body[index+2].split()[0]
-                body_dict['fase'].append([
-                    hora,
-                    fase
-                ])
+
+            match2 = _PHASE_TEXT_RE.match(stripped)
+            if match2:
+                fase = match2.group(1).strip()
+                hora = lines_body[index + 2].split()[0]
+                body_dict['fase'].append([hora, fase])
                 return True, body_dict
-            elif match3:
-                fase = match3.group(1).strip()  # Captura a hora
-                hora = match3.group(2).strip()  # Captura a hora
-                body_dict['fase'].append([
-                    hora,
-                    fase
-                ])
+
+            match3 = _PHASE_TEXT_HORA_RE.match(stripped)
+            if match3:
+                body_dict['fase'].append([match3.group(2).strip(), match3.group(1).strip()])
                 return True, body_dict
+
             return False, body_dict
-            
+
         except Exception as e:
-            # Log do erro para debug
-            print(f"Erro ao processar linha de fase: {str(e)}")
+            _logger.debug("Erro ao processar linha de fase: %s", e)
             return False, body_dict
             
     def read_header(self):
@@ -228,27 +209,22 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
                 - fase: Dicionário com horários e nomes das fases do ciclo
         """
         lines_body = self.read_body_lines_raw()
-       
-        body_dict = {}
-        body_dict['data'] = []
-        body_dict['fase'] = []
-       
-        # Processa o cabeçalho
+
+        body_dict = {'data': [], 'fase': []}
         body_dict = self._process_header_line(lines_body, body_dict)
-        
-        for index,line in enumerate(lines_body[1:]):
+
+        for index, line in enumerate(lines_body[1:]):
             line = line.strip()
-            
-            # Verifica se é uma linha de fase
+            if not line:
+                continue
+
             is_phase, body_dict = self._process_phase_line(line, body_dict, index, lines_body)
-            
             if is_phase:
                 continue
-                    
-            # Processa linha de dados
+
             body_dict = self._process_body_line(line, body_dict)
-            self.body = body_dict
-      
+
+        self.body = body_dict
         return self.body
 
     def read_body_lines_raw(self):
@@ -283,20 +259,17 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
                 - 'erro': Se ocorrer alguma exceção no processo
         """
         try:
-            # Garante que as linhas brutas do corpo estejam carregadas
             if not hasattr(self, 'lines_body_raw') or not self.lines_body_raw:
                 self.read_body_lines_raw()
-            # Regex para verificar conclusão ou cancelamento do ciclo
-            padrao = r'^FIM DE CICLO\s+\d{2}:\d{2}:\d{2}$'
-            padrao2 = r'^CICLO CANCELADO\s+\d{2}:\d{2}:\d{2}$'
             for line in self.lines_body_raw:
-                # Verifica se a linha indica conclusão do ciclo
-                if re.match(padrao, line.strip()):
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                # Filtro barato antes do regex.
+                if stripped.startswith('FIM DE CICLO') and _FIM_CICLO_RE.match(stripped):
                     return 'concluido'
-                # Verifica se a linha indica ciclo abortado/cancelado
-                elif re.match(padrao2, line.strip()):
+                if stripped.startswith('CICLO CANCELADO') and _CICLO_CANCELADO_RE.match(stripped):
                     return 'abortado'
-            # Nenhuma linha indicando fim ou cancelamento encontrada
             return 'incompleto'
         except Exception as e:
             _logger.error(f"Erro ao determinar estado do ciclo: {str(e)}")
@@ -319,12 +292,31 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
         Raises:
             Exception: Se houver erro na geração do gráfico
         """
+        fig = None
         try:
             import matplotlib.pyplot as plt
             import matplotlib.dates as mdates
             import io
             import base64
-            
+
+            # Validação barata antes de criar figura (custosa ~100ms): fases/data
+            # devem ter datetime no índice 0 — DataObjectFitaDigital normaliza isso.
+            fases_raw = body.get('fase') or []
+            data_raw = body.get('data') or []
+            if not data_raw:
+                _logger.warning("make_graph: body['data'] vazio")
+                return False
+            if fases_raw and not hasattr(fases_raw[0][0], 'strftime'):
+                _logger.warning(
+                    "make_graph: fase[0] não é datetime — chame via DataObjectFitaDigital"
+                )
+                return False
+            if not hasattr(data_raw[0][0], 'strftime'):
+                _logger.warning(
+                    "make_graph: data[0][0] não é datetime — chame via DataObjectFitaDigital"
+                )
+                return False
+
             # Cria uma figura e dois eixos com escalas diferentes
             fig, ax1 = plt.subplots(figsize=(16, 9))
             ax2 = ax1.twinx()  # Cria um segundo eixo Y compartilhando o mesmo eixo X
@@ -456,15 +448,19 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
             
             # Converte para base64
             cycle_graph = base64.b64encode(buf.getvalue())
-            
-            # Fecha a figura para liberar memória
-            plt.close()
             return cycle_graph
-                
+
         except Exception as e:
             _logger.error(f"Erro ao gerar gráfico: {str(e)}")
-            cycle_graph = False
-            return cycle_graph
+            return False
+        finally:
+            # Sempre libera a figura — mesmo em exceção — pra evitar leak no matplotlib.
+            if fig is not None:
+                try:
+                    import matplotlib.pyplot as plt
+                    plt.close(fig)
+                except Exception:
+                    pass
     
        
 
