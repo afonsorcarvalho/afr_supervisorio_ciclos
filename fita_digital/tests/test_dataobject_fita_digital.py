@@ -135,6 +135,88 @@ class TestTimeConversion(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.do.replace_date_in_times([t], "31/13/2024")
 
+    def test_replace_date_in_times_backward_pequeno_nao_vira_dia(self):
+        """
+        Equipamento Baumer Hivac2 emite o timestamp do marcador de fase
+        ligeiramente posterior ao snapshot do minuto seguinte (ex.: 16:30:51
+        seguido de 16:30:50). Esse backward-jump de 1s NÃO deve disparar
+        rollover de dia — todos os pontos permanecem em 2024-01-01.
+        """
+        times = [
+            datetime.strptime(t, "%H:%M:%S")
+            for t in ["16:30:51", "16:30:50", "16:31:50", "17:00:00"]
+        ]
+        out = self.do.replace_date_in_times(times, "2024-01-01")
+        for dt in out:
+            self.assertEqual(dt.date(), datetime(2024, 1, 1).date())
+        self.assertEqual(out[0].strftime("%H:%M:%S"), "16:30:51")
+        self.assertEqual(out[1].strftime("%H:%M:%S"), "16:30:50")
+
+    def test_replace_date_in_times_cruzamento_meianoite_vira_dia(self):
+        """
+        Salto pra trás > 12h é cruzamento real de meia-noite — incrementa
+        o dia. 23:55 → 00:05 são pontos consecutivos em dias adjacentes.
+        """
+        times = [
+            datetime.strptime(t, "%H:%M:%S")
+            for t in ["23:55:00", "00:05:00", "00:10:00"]
+        ]
+        out = self.do.replace_date_in_times(times, "2024-01-01")
+        self.assertEqual(out[0].date(), datetime(2024, 1, 1).date())
+        self.assertEqual(out[1].date(), datetime(2024, 1, 2).date())
+        self.assertEqual(out[2].date(), datetime(2024, 1, 2).date())
+
+
+class TestRolloverMarcadorFita(unittest.TestCase):
+    """
+    End-to-end: fita AFR13 com padrão de marcador de fase emitindo
+    timestamp 1s após o snapshot do minuto seguinte. Antes do fix de
+    DAY_ROLLOVER_THRESHOLD, esse padrão fazia o conversor incrementar
+    days_elapsed e jogar todos os pontos restantes pro dia seguinte.
+    """
+
+    def setUp(self):
+        from fita_digital.reader_fita_digital.reader_fita_digital_afr13 import (
+            ReaderFitaDigitalAfr13,
+        )
+
+        fixture = (
+            _ADDON_ROOT
+            / "fita_digital"
+            / "tests"
+            / "fixtures"
+            / "20251001_152420_Ciclo_002509_rollover_marcador.txt"
+        )
+        self.do = DataObjectFitaDigital(directory_path=str(fixture.parent) + "/")
+        self.do.register_reader_fita(ReaderFitaDigitalAfr13(str(fixture)))
+
+    def test_todos_os_pontos_permanecem_no_mesmo_dia(self):
+        self.do.read_header_fita()
+        body = self.do.read_body_fita()
+
+        dia_cabecalho = datetime(2025, 10, 1).date()
+        for linha in body["data"]:
+            self.assertEqual(
+                linha[0].date(),
+                dia_cabecalho,
+                f"Ponto {linha[0]} não deveria ter virado o dia",
+            )
+
+    def test_ordem_temporal_preserva_backward_jump(self):
+        """
+        Backward jump 16:30:51 → 16:30:50 fica preservado (sem reordenar):
+        primeiro o marcador, depois o snapshot 1s antes.
+        """
+        self.do.read_header_fita()
+        body = self.do.read_body_fita()
+
+        horarios = [linha[0].strftime("%H:%M:%S") for linha in body["data"]]
+        self.assertIn("15:30:51", horarios)
+        self.assertIn("15:30:50", horarios)
+        idx_marcador = horarios.index("15:30:51")
+        idx_snapshot = horarios.index("15:30:50")
+        self.assertLess(idx_marcador, idx_snapshot)
+
 
 class TestCalcularTempoEntreFases(unittest.TestCase):
     """calcular_tempo_entre_fases: body incompleto e índices inválidos.
