@@ -5,6 +5,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 _logger = logging.getLogger(__name__)
 import numpy as np
+
+# Salto pra trás abaixo deste limite é tratado como ruído do equipamento
+# (ex.: marcador de fase emite ts ligeiramente posterior ao snapshot do minuto),
+# acima trata como cruzamento real de meia-noite.
+DAY_ROLLOVER_THRESHOLD = timedelta(hours=12)
+
+
 class DataObjectFitaDigital:
     """
     Classe para manipulação de arquivos de fita digital.
@@ -521,17 +528,13 @@ class DataObjectFitaDigital:
                 t.replace(year=date_object.year, month=date_object.month, day=date_object.day)
                 for t in time_objects
             ]
-            # Só conta rollover de dia em salto real (>12h pra trás).
-            # Pequenos backward-jumps (ex.: marcador de fase 16:30:51 seguido
-            # de snapshot 16:30:50) são ruído do equipamento, não meia-noite.
             days_elapsed = 0
             for i in range(1, len(updated_datetimes)):
                 updated_datetimes[i] += timedelta(days=days_elapsed)
-                if updated_datetimes[i] < updated_datetimes[i - 1]:
-                    delta = updated_datetimes[i - 1] - updated_datetimes[i]
-                    if delta > timedelta(hours=12):
-                        days_elapsed += 1
-                        updated_datetimes[i] += timedelta(days=1)
+                delta = updated_datetimes[i - 1] - updated_datetimes[i]
+                if delta > DAY_ROLLOVER_THRESHOLD:
+                    days_elapsed += 1
+                    updated_datetimes[i] += timedelta(days=1)
 
             return updated_datetimes
     def compute_statistics(self, phases=None):
