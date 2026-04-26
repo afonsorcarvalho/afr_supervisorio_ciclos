@@ -21,31 +21,25 @@ from reader_fita_digital.reader_fita_digital_sercon_jp_lac210 import ReaderFitaD
 from reader_fita_digital.reader_fita_digital_sercon_tds import ReaderFitaDigitalSerconTds
 
 
-FIXTURE_DIR = Path(__file__).parent / "tests" / "fixtures"
 EXEMPLOS_DIR = Path(__file__).parent / "reader_fita_digital" / "exemplos_fitas"
 
-# Map reader class to fixture file (using larger exemplos_fitas when available)
+# Map reader class to example file in organized folders
 READERS = [
-    (ReaderFitaDigitalAfr13, "20260425_152851_Ciclo_003154.txt", "AFR13"),
-    (ReaderFitaDigitalAfr14Medplast, "20260425_152851_Ciclo_003154.txt", "AFR14_MedPlast"),
-    (ReaderFitaDigitalBaumerHivac2, "20260425_152851_Ciclo_003154.txt", "Baumer_Hivac2"),
-    (ReaderFitaDigitalSerconOr2011, "20260425_152851_Ciclo_003154.txt", "Sercon_OR2011"),
-    (ReaderFitaDigitalSerconJpLac210, "20260425_152851_Ciclo_003154.txt", "Sercon_JP_LAC210"),
-    (ReaderFitaDigitalSerconTds, "20260425_152851_Ciclo_003154.txt", "Sercon_TDS"),
+    (ReaderFitaDigitalAfr13, "afr13/20260425_152851_Ciclo_003154.txt", "AFR13"),
+    (ReaderFitaDigitalAfr14Medplast, "afr14_medplast/20251001_152420_Ciclo_002509_baumer_estilo_amostra.txt", "AFR14_MedPlast"),
+    (ReaderFitaDigitalBaumerHivac2, "baumer_hivac2/20251001_152420_Ciclo_002509_rollover_marcador.txt", "Baumer_Hivac2"),
+    (ReaderFitaDigitalSerconOr2011, "sercon_or2011/20251001_152420_Ciclo_002509_valid_afr13.txt", "Sercon_OR2011"),
+    (ReaderFitaDigitalSerconJpLac210, "sercon_jp_lac210/20251001_152420_Ciclo_002509_valid_afr13.txt", "Sercon_JP_LAC210"),
+    (ReaderFitaDigitalSerconTds, "sercon_tds/20251001_152420_Ciclo_002509_valid_afr13.txt", "Sercon_TDS"),
 ]
 
 
 def get_fixture_path(filename):
-    """Find fixture file, checking both fixtures and exemplos_fitas dirs."""
-    fixture_path = FIXTURE_DIR / filename
-    if fixture_path.exists():
-        return fixture_path
-
+    """Get example file from exemplos_fitas directory."""
     exemplos_path = EXEMPLOS_DIR / filename
     if exemplos_path.exists():
         return exemplos_path
-
-    raise FileNotFoundError(f"Fixture {filename} not found in {FIXTURE_DIR} or {EXEMPLOS_DIR}")
+    raise FileNotFoundError(f"Example {filename} not found in {EXEMPLOS_DIR}")
 
 
 def profile_reader(reader_class, fixture_file, name, iterations=10):
