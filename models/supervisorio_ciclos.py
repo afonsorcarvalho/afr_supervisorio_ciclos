@@ -870,7 +870,7 @@ class SupervisorioCiclos(models.Model):
                 record.cycle_statistics_data = {}
                 continue
             try:
-                do = self._get_dataobject(record.equipment_id, record.file_path)
+                do = record._get_dataobject(record.equipment_id, record.file_path)
                 if record.cycle_type_id and record.cycle_type_id.fases_fita_digital:
                     fases = record.cycle_type_id.fases_fita_digital.split(',')
                     statistics = do.compute_statistics(fases)
