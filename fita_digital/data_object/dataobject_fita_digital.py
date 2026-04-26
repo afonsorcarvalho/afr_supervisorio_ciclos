@@ -4,8 +4,8 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from statistics import mode, StatisticsError
+
 _logger = logging.getLogger(__name__)
-import numpy as np
 
 # Salto pra trás abaixo deste limite é tratado como ruído do equipamento
 # (ex.: marcador de fase emite ts ligeiramente posterior ao snapshot do minuto),
