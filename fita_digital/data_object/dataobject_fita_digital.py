@@ -3,6 +3,7 @@ import re
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
+from statistics import mode, StatisticsError
 _logger = logging.getLogger(__name__)
 import numpy as np
 
@@ -164,16 +165,6 @@ class DataObjectFitaDigital:
         with open(self.directory_path + file_name, 'r') as file:
             header = file.read(size_header)
             return header
-    
-    def _read_file_fita(self,file_name, size_header=25 ):
-        """
-        Lê um arquivo de fita completo.
-
-        Args:
-            file_name (str): Nome do arquivo
-            size_header (int): Tamanho do cabeçalho
-        """
-        _cut_header = self._cut_header_fita(file_name, size_header)
     
     def register_reader_fita(self, reader_fita,size_header=None):
         """
@@ -428,7 +419,6 @@ class DataObjectFitaDigital:
             if indice_inicial > indice_final:
                 raise ValueError("O índice inicial deve ser menor que o índice final")
 
-            #print(f"fases: {fases}")
             if not (0 <= indice_inicial < len(fases) and 0 <= indice_final < len(fases)):
                 raise IndexError("Índices fora do intervalo válido")
 
@@ -576,63 +566,41 @@ class DataObjectFitaDigital:
         """
        
         error_msg = []
-        
+
         if not self.body_fita or 'data' not in self.body_fita:
             raise ValueError("Dados da fita não foram carregados")
 
         if not fases:
             raise ValueError("Lista de fases não fornecida")
-        #filtrando as fases de interesse no body_fita
-        body_fases_filtradas = [x for x in self.body_fita['fase'] if x[1] in fases]
-        
-        estatisticas = {}
-        # Para cada fase na lista
-        for i in range(len(fases)-1):
-            fase_atual = fases[i]
-            fase_proxima = None
-    
-            # Calcula a duração entre as fases usando os índices
-            try:
-                idx_fase_atual = [f[1] for f in self.body_fita['fase'] ].index(fase_atual)
-                #print(f"idx_fase_atual: {idx_fase_atual}, fase_atual: {fase_atual}")
-                if idx_fase_atual is None:
-                    error_msg[i] = f"Não foi possível encontrar a fase {fase_atual}"
-                    continue
-                #print(f"idx_fase_atual: {idx_fase_atual}")
-                idx_fase_proxima = None
-                
-                for fproxima in fases[i+1:]:
-                    try:
-                        idx_fase_proxima =  [f[1] for f in self.body_fita['fase']].index(fproxima)
-                        fase_proxima = fproxima
-                        break
-                    except ValueError as e:
-                        error_msg.append( f"Não foi possível encontrar a próxima fase {fproxima} para {fase_atual}: {str(e)}"  )  
-                        continue
-               
-                    
-                    
-                #print(f"idx_fase_proxima: {idx_fase_proxima}")
-                duration = self.calcular_tempo_entre_fases(idx_fase_atual, idx_fase_proxima)
-                ##  print(f"duration: {duration}")
-           
-            except ValueError as e:
-                error_msg.append( f"A fase {fase_atual} não foi encontrada: {str(e)}")
-                continue
-            except Exception as e:
-                error_msg.append( f"Erro ao calcular estatísticas do ciclo {fase_atual}: {str(e)}")
-                
-            # Calcula as estatísticas entre as fases
-            if fase_proxima is None:
-                error_msg.append( f"Não foi possível encontrar a próxima fase para {fase_atual}. Calculando até o final do ciclo")
 
-                
+        phase_idx = {f[1]: i for i, f in enumerate(self.body_fita['fase'])}
+
+        estatisticas = {}
+        for i in range(len(fases) - 1):
+            fase_atual = fases[i]
+            idx_fase_atual = phase_idx.get(fase_atual)
+            if idx_fase_atual is None:
+                error_msg.append(f"A fase {fase_atual} não foi encontrada")
+                continue
+
+            fase_proxima = None
+            idx_fase_proxima = None
+            for fproxima in fases[i + 1:]:
+                idx = phase_idx.get(fproxima)
+                if idx is not None:
+                    fase_proxima = fproxima
+                    idx_fase_proxima = idx
+                    break
+                error_msg.append(f"Não foi possível encontrar a próxima fase {fproxima} para {fase_atual}")
+
+            if fase_proxima is None:
+                error_msg.append(f"Não foi possível encontrar a próxima fase para {fase_atual}. Calculando até o final do ciclo")
+
+            duration = self.calcular_tempo_entre_fases(idx_fase_atual, idx_fase_proxima)
             stats = self.calcular_estatisticas_ciclo_entre_fases(fase_atual, fase_proxima)
-            
-            # Adiciona as estatísticas ao dicionário
             estatisticas[fase_atual] = {
                 'Duration': duration,
-                **stats
+                **stats,
             }
 
         return estatisticas, error_msg
@@ -713,11 +681,9 @@ class DataObjectFitaDigital:
                 minimo = min(valores)
                 media = sum(valores) / len(valores)
                 
-                # Calcula a moda
-                from statistics import mode
                 try:
                     moda = mode(valores)
-                except:
+                except StatisticsError:
                     moda = None
                     
                 estatisticas[coluna] = {
