@@ -298,18 +298,13 @@ class SupervisorioCiclos(models.Model):
     )
     cycle_graph = fields.Image(
         string='Gráfico do Ciclo',
-        compute='compute_cycle_graph', 
+        compute='compute_cycle_graph',
         store=True,
-        help='Gráfico gerado a partir dos dados do ciclo',
-        # Opções disponíveis para o campo Image:
-        max_width=1920,  # Largura máxima da imagem
-        max_height=1080, # Altura máxima da imagem 
-        verify_resolution=True, # Verifica resolução da imagem
-        # Widget options:
-        # image - Widget padrão para imagens
-        # image_url - Para imagens via URL
-        # image_preview - Miniatura da 
-        # binary - Mostra como arquivo binário
+        attachment=True,
+        max_width=1280,
+        max_height=720,
+        verify_resolution=True,
+        help='Gráfico gerado a partir dos dados do ciclo. Servido via /web/image, fora do payload de read().',
     )
     cycle_graph_filename = fields.Char(
         string='Nome do Arquivo do Gráfico',
@@ -1032,6 +1027,23 @@ class SupervisorioCiclos(models.Model):
         """
         cycle_graph = do.make_graph()
         record.cycle_graph = cycle_graph
+
+    @api.model
+    def action_recompute_cycle_graph_attachments(self, batch_size=200):
+        """Recomputa cycle_graph para popular ir.attachment após mudança para attachment=True.
+        Roda em batches para não esgotar memória. Use no shell ou via cron pontual.
+        """
+        records = self.search([('file_path', '!=', False)])
+        total = len(records)
+        _logger.info("Recomputando cycle_graph: %s registros", total)
+        for i in range(0, total, batch_size):
+            batch = records[i:i + batch_size]
+            batch.invalidate_recordset(['cycle_graph'])
+            batch._recompute_field('cycle_graph') if hasattr(batch, '_recompute_field') else batch.modified(['file_path'])
+            batch.flush_recordset(['cycle_graph']) if hasattr(batch, 'flush_recordset') else batch.flush()
+            self.env.cr.commit()
+            _logger.info("Recompute progresso: %s/%s", min(i + batch_size, total), total)
+        return total
         
 
     def get_view(self, view_id=None, view_type='form', **options):
