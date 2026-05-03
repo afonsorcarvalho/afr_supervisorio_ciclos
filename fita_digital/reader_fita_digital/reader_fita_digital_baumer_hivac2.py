@@ -191,17 +191,25 @@ class ReaderFitaDigitalBaumerHivac2(ReaderFitaDigitalInterface):
         # Obtém informações do arquivo
         
         header_values = super().read_header()
-       
-        # Converte a data para o formato DD-MM-YYYY conforme solicitado
-        # Supondo que a data original esteja no formato 'D-M-YYYY' ou 'DD-MM-YYYY'
+
+        # Evita KeyError quando o arquivo de fita não contém a linha "DATA:".
         from datetime import datetime
-        data_original = header_values['DATA:'].split(' ')[0]
+        data_bruta = header_values.get('DATA:')
+        if not data_bruta:
+            _logger.warning(
+                "Campo 'DATA:' não encontrado no cabeçalho do arquivo %s; "
+                "mantendo valor vazio.",
+                getattr(self, 'full_path_file', '<arquivo desconhecido>'),
+            )
+            header_values['DATA:'] = ''
+            return header_values
+
+        data_original = data_bruta.split(' ')[0]
         try:
-            # Tenta converter para datetime e depois para o formato desejado
             data_convertida = datetime.strptime(data_original, "%d/%m/%Y")
         except Exception:
-                # Se não conseguir converter, mantém o valor original
-                data_convertida = data_original
+            # Formato inesperado; preserva valor original para não quebrar fluxo.
+            data_convertida = data_original
         header_values['DATA:'] = data_convertida
       
         
