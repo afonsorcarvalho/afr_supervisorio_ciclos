@@ -846,13 +846,20 @@ class SupervisorioCiclos(models.Model):
             if not record.file_path or not os.path.exists(record.file_path) or not record.cycle_txt:
                 record.cycle_statistics_txt = False
                 continue
-            do = record._get_dataobject(record.equipment_id, record.file_path)
-            if record.cycle_type_id.fases_fita_digital:
-                fases = record.cycle_type_id.fases_fita_digital.split(',')
-                statistics = do.compute_statistics(fases)
-                record.cycle_statistics_txt = statistics
-            else:
-                record.cycle_statistics_txt = do.compute_statistics()
+            try:
+                do = record._get_dataobject(record.equipment_id, record.file_path)
+                if record.cycle_type_id.fases_fita_digital:
+                    fases = record.cycle_type_id.fases_fita_digital.split(',')
+                    record.cycle_statistics_txt = do.compute_statistics(fases)
+                else:
+                    record.cycle_statistics_txt = do.compute_statistics()
+            except Exception as e:
+                # Evita quebrar upgrade/recompute quando fita está corrompida ou incompleta.
+                _logger.error(
+                    "Erro ao calcular cycle_statistics_txt para ciclo %s (%s): %s",
+                    record.name, record.file_path, e,
+                )
+                record.cycle_statistics_txt = False
 
     @api.depends('cycle_txt')
     def _compute_cycle_statistics_data(self):
