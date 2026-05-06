@@ -22,8 +22,14 @@
                 .table-statistics {
                     font-size: 11px;
                 }
-                
-             
+
+                .section-title {
+                    border: 1px solid rgb(0, 0, 0);
+                    border-radius: 8px;
+                    padding: 5px;
+                    margin-bottom: 5px;
+                    margin-top: 10px;
+                }
             </style>
                 
                     <div class="page">
@@ -229,10 +235,7 @@
                                         <img t-attf-src="data:image/png;base64,{{o.signature_image}}"
                                              style="max-height:100px;max-width:100%;" alt="Assinatura"/>
                                     </div>
-                                    <div class="mt-2 mb-2">
-                                        Garantia de qualidade / Aprovação
-                                    </div>
-                                    <div style="display:inline-block;max-width:100%;text-align:center;font-size:15px;">
+                                    <div style="display:inline-block;max-width:100%;text-align:center;font-size:14px;">
                                         <strong><span t-field="o.signature_employee_name"/></strong><br/>
                                         <t t-if="o.signature_professional_documentation">
                                             <span t-field="o.signature_professional_documentation"/><br/>
@@ -268,14 +271,13 @@
                             <div style="page-break-before: always;">
                                 <div class="row mt-4">
                                     <div class="col-12 text-center">
-                                        <h4 class="mb-4"><span t-field="foto.titulo"/></h4>
+                                        <h5 class="mb-3 text-center section-title"><span t-field="foto.titulo"/></h5>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row">
                                     <div class="col-12">
                                         <table class="table table-sm table-bordered">
-                                           
                                             <tr t-if="foto.legenda">
                                                 <td class="font-weight-bold bg-light">Legenda:</td>
                                                 <td><span t-field="foto.legenda"/></td>
@@ -284,24 +286,15 @@
                                                 <td class="font-weight-bold bg-light">Data:</td>
                                                 <td><span t-field="foto.data_criacao"/></td>
                                             </tr>
-                                            
+                                            <tr class="text-center"><td colspan="2" style="padding:0;">
+                                                <img t-if="foto.imagem" t-attf-src="data:image/png;base64,{{foto.imagem}}"
+                                                     style="max-width:100%; max-height:300mm; width:auto; height:auto; display:block; margin:0 auto; border: 1px solid #ddd; background: white;"
+                                                     t-att-alt="foto.titulo"/>
+                                            </td></tr>
+                                            <tr class="text-center"><td colspan="2"><small>
+                                                Foto <span t-esc="foto_index + 1"/> de <span t-esc="len(o.fotos_ids)"/>
+                                            </small></td></tr>
                                         </table>
-                                    </div>
-                                </div>
-                                
-                                <div class="row mt-4">
-                                    <div class="col-12 text-center">
-                                        <img t-if="foto.imagem" t-attf-src="data:image/png;base64,{{foto.imagem}}"
-                                             style="max-width:100%; max-height:210mm; width:auto; height:auto; display:block; margin:0 auto; border: 1px solid #ddd; background: white;"
-                                             t-att-alt="foto.titulo"/>
-                                    </div>
-                                </div>
-                                
-                                <div class="row mt-3">
-                                    <div class="col-12 text-center text-muted">
-                                        <small>
-                                            Foto <span t-esc="foto_index + 1"/> de <span t-esc="len(o.fotos_ids)"/>
-                                        </small>
                                     </div>
                                 </div>
                             </div>
