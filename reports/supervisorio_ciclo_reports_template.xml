@@ -292,7 +292,7 @@
                                 <div class="row mt-4">
                                     <div class="col-12 text-center">
                                         <img t-if="foto.imagem" t-attf-src="data:image/png;base64,{{foto.imagem}}"
-                                             style="width: 100%; height: auto; border: 1px solid #ddd; background: white;"
+                                             style="max-width:100%; max-height:210mm; width:auto; height:auto; display:block; margin:0 auto; border: 1px solid #ddd; background: white;"
                                              t-att-alt="foto.titulo"/>
                                     </div>
                                 </div>
