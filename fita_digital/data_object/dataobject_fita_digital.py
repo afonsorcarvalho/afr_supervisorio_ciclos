@@ -10,7 +10,9 @@ _logger = logging.getLogger(__name__)
 # Salto pra trás abaixo deste limite é tratado como ruído do equipamento
 # (ex.: marcador de fase emite ts ligeiramente posterior ao snapshot do minuto),
 # acima trata como cruzamento real de meia-noite.
-DAY_ROLLOVER_THRESHOLD = timedelta(hours=12)
+# 30 min é suficiente para absorver jitter de relógio; 12h falhou em ciclos
+# que cruzam meia-noite com gap de fase < 12h (ex.: 20:00 → 10:23 = 9h37m).
+DAY_ROLLOVER_THRESHOLD = timedelta(minutes=30)
 
 
 class DataObjectFitaDigital:
