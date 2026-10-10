@@ -588,7 +588,14 @@ class SupervisorioCiclos(models.Model):
                 if ciclo.state == 'cancelado':
                     _logger.debug(f"Ciclo {ciclo_name} está cancelado. Não será atualizado")
                     continue
+                # Pula se o TXT não mudou desde o último processamento (cron roda a cada minuto)
+                file_mtime = self._get_file_mtime_utc(os.path.join(arquivo['path'], arquivo['name']))
+                stored_mtime = ciclo[:1].cycle_file_mtime
+                if file_mtime and stored_mtime and stored_mtime.replace(microsecond=0) == file_mtime:
+                    continue
                 ciclo.update_cycle(arquivo,equipment_id)
+                if file_mtime:
+                    ciclo.with_context(skip_cycle_cache_refresh=True).write({'cycle_file_mtime': file_mtime})
                 continue
                
             _logger.debug(f"Ciclo {ciclo_name} sendo criado para o equipamento {equipment_id}")
